@@ -289,7 +289,15 @@
   .hero-dates { margin-top: 1.1rem; }
   .hero-dates span { color: var(--gold-deep); font-family: var(--display); font-style: italic; font-size: .9rem; }
   footer .names .amp, footer .names { color: var(--ink); }
-  @media (max-width: 560px) { .arch { width: 78vw; } }
+  @media (max-width: 560px) {
+    .arch { width: 80vw; justify-content: flex-start; padding: 31% 14% 6%; }
+    .hero .intro { font-size: .88rem; margin-bottom: .35rem; }
+    .names { font-size: clamp(2.2rem, 11vw, 2.9rem); }
+    .flourish { width: 116px; margin-top: .8rem; }
+    .hero-dates { margin-top: .8rem; gap: .5rem; }
+    .hero-dates p { font-size: 1rem; }
+    .hero-dates span { font-size: .82rem; }
+  }
   @media (prefers-reduced-motion: reduce) { .roses { animation: none; opacity: 1; transform: none; } }
 
   /* Proposal gallery */
@@ -765,7 +773,7 @@ const WEDDING = {
   // Hero dates
   const hero = document.getElementById("heroDates");
   WEDDING.events.forEach(ev => {
-    const p = el("p", null, ev.city + ", " + ev.dateText);
+    const p = el("p", null, ev.city.split(",")[0] + ", " + ev.dateText.replace(/^[A-Za-z]+day,\s*/, ""));
     p.appendChild(el("span", null, ev.name));
     hero.appendChild(p);
   });
