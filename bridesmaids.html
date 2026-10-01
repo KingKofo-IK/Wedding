@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>F&amp;I Airways: Online Check-in</title>
+<meta name="robots" content="noindex">
+<meta property="og:title" content="F&amp;I Airways: Online Check-in">
+<meta property="og:description" content="You have a boarding pass waiting. Check in to see it.">
+<meta property="og:image" content="https://thekofoworades.com/og-image.png">
+<meta property="og:url" content="https://thekofoworades.com/bridesmaids">
+<meta name="theme-color" content="#34473A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Cormorant+Garamond:wght@600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<style>
+  :root {
+    --sage: #5C7A5E; --sage-deep: #34473A; --sage-darker: #26352B; --cream: #F8F5EF;
+    --gold: #B08D57; --gold-light: #E2CB98; --gold-deep: #7A5E34; --ink: #26302A;
+    --script: "Pinyon Script", "Snell Roundhand", cursive;
+    --serif: "Fraunces", Georgia, serif;
+    --mono: "IBM Plex Mono", "Courier New", monospace;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; min-height: 100%; }
+  html { background: var(--sage-darker); }
+  body {
+    background: radial-gradient(ellipse 120% 60% at 50% 0%, #46604B 0%, var(--sage-deep) 50%, var(--sage-darker) 100%) no-repeat;
+    color: var(--cream); font-family: var(--mono);
+    display: flex; justify-content: center;
+  }
+  main { width: min(100%, 520px); padding: 2.5rem 1.25rem 3rem; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .brand { display: flex; align-items: center; gap: .6rem; }
+  .brand svg { width: 30px; height: 30px; }
+  .brand span { font-family: var(--script); font-size: 2.6rem; line-height: 1; color: var(--gold-light); padding-top: .3rem; }
+  .kicker { margin: .9rem 0 0; font-size: .82rem; font-weight: 500; letter-spacing: .3em; color: var(--gold-light); }
+
+  /* Check-in */
+  .checkin { width: 100%; margin-top: 2rem; background: var(--cream); color: var(--ink); border-radius: 22px; padding: 1.8rem 1.4rem 1.6rem; text-align: left; box-shadow: 0 30px 60px -25px rgba(0,0,0,.6); }
+  .checkin h1 { margin: 0 0 .4rem; font-family: var(--serif); font-weight: 400; font-size: 1.7rem; line-height: 1.2; color: var(--sage-deep); }
+  .checkin p { margin: 0 0 1.4rem; font-size: .88rem; line-height: 1.6; color: #4A564E; }
+  label { display: block; font-size: .72rem; font-weight: 500; letter-spacing: .2em; color: var(--sage); margin-bottom: .5rem; }
+  .combo { position: relative; }
+  .combo input {
+    width: 100%; font: 400 1.15rem var(--serif); color: var(--ink);
+    background: #fff; border: 1.5px solid #CFC7B6; border-radius: 12px; padding: .9rem 1rem;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .combo input:focus { outline: none; border-color: var(--sage); box-shadow: 0 0 0 4px rgba(92,122,94,.15); }
+  .combo input[aria-invalid="true"] { border-color: #A4532F; }
+  .listbox {
+    position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: .35rem; list-style: none;
+    background: #fff; border: 1px solid #DDD5C4; border-radius: 12px; box-shadow: 0 18px 30px -12px rgba(38,48,42,.35);
+    max-height: 260px; overflow: auto;
+  }
+  .listbox li { padding: .8rem .85rem; border-radius: 8px; cursor: pointer; font: 400 1.05rem var(--serif); display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 44px; }
+  .listbox li small { font: 500 .66rem var(--mono); letter-spacing: .14em; color: var(--gold-deep); white-space: nowrap; }
+  .listbox li[aria-selected="true"], .listbox li:hover { background: #EEF2EC; }
+  .listbox .empty { cursor: default; font: .85rem/1.5 var(--mono); color: #6B5A45; }
+  .listbox .empty:hover { background: none; }
+  .msg { min-height: 1.3em; margin: .6rem 0 0 !important; font-size: .8rem !important; color: #8A4A2C !important; }
+  .btn {
+    width: 100%; margin-top: 1rem; border: 0; border-radius: 999px; cursor: pointer;
+    background: var(--sage-deep); color: var(--cream); font: 500 .9rem var(--mono); letter-spacing: .2em;
+    padding: 1.05rem 1.2rem; transition: background .2s, opacity .2s, transform .2s;
+  }
+  .btn:hover:not(:disabled) { background: #2B3B30; }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn:focus-visible, .ghost:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  /* Printing */
+  .printing { margin-top: 3rem; display: grid; justify-items: center; gap: 1.2rem; }
+  .slot { width: 220px; height: 10px; border-radius: 6px; background: #1B261E; box-shadow: inset 0 2px 4px rgba(0,0,0,.6); }
+  .paper { width: 190px; height: 0; background: var(--cream); border-radius: 0 0 6px 6px; margin-top: -1.2rem; animation: feed 1.5s cubic-bezier(.4,0,.2,1) forwards; }
+  @keyframes feed { to { height: 110px; } }
+  .printing p { margin: 0; font-size: .82rem; letter-spacing: .24em; color: var(--gold-light); }
+
+  /* Result */
+  .result { width: 100%; margin-top: 1.6rem; display: flex; flex-direction: column; align-items: center; }
+  .result .hello { margin: 0 0 1.1rem; font-family: var(--serif); font-style: italic; font-weight: 300; font-size: 1.3rem; }
+  .viewport { position: relative; width: 100%; aspect-ratio: 1080 / 1350; border-radius: 10px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); }
+  .viewport .poster { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .result .arrive, .book.arrive { animation: arrive 1s cubic-bezier(.2,.8,.25,1); }
+  @keyframes arrive { from { opacity: 0; transform: translateY(40px) rotate(-2deg); } }
+  .actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: 1.3rem; }
+  .actions .btn { margin: 0; background: var(--gold); color: var(--sage-darker); font-size: .78rem; letter-spacing: .14em; }
+  .actions .btn:hover:not(:disabled) { background: #C19E66; }
+  .ghost { margin-top: 1.1rem; background: none; border: 0; color: #C9D3C5; font: .8rem var(--mono); letter-spacing: .12em; text-decoration: underline; cursor: pointer; padding: .6rem; }
+  .fine { margin: 1.4rem 0 0; font-size: .74rem; line-height: 1.6; color: #A9B6A6; }
+
+  /* ---------- The pass itself (1080 x 1350, captured for download) ---------- */
+  .poster { width: 1080px; height: 1350px; position: relative; overflow: hidden; background: #34473A; font-family: var(--mono); color: var(--ink); text-align: left; }
+  .poster .f1 { position: absolute; inset: 30px; border: 1px solid #B08D57; }
+  .poster .f2 { position: absolute; inset: 38px; border: 1px solid #6E6A4E; }
+  .pass { position: absolute; left: 110px; top: 85px; width: 860px; height: 1180px; border-radius: 28px; background: #F8F5EF; overflow: hidden; }
+  .band { position: absolute; left: 0; top: 0; width: 860px; height: 150px; background: #2B3B30; padding: 0 56px; display: flex; align-items: center; justify-content: space-between; }
+  .band .air { display: flex; align-items: center; gap: 18px; }
+  .band .air span { font-family: var(--script); font-size: 62px; line-height: 1; color: #E2CB98; padding-top: 8px; }
+  .band .bp { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .band .bp b { font-weight: 500; font-size: 26px; letter-spacing: .26em; color: #F8F5EF; }
+  .band .bp i { font-style: normal; font-size: 22px; letter-spacing: .24em; color: #D9C091; }
+  .lbl { display: block; font-size: 22px; letter-spacing: .17em; color: #4F6A52; }
+  .row1 { position: absolute; left: 56px; right: 56px; top: 186px; display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
+  .pname { display: block; margin-top: 6px; font-family: var(--serif); font-size: 46px; line-height: 1.1; white-space: nowrap; }
+  .flight { text-align: right; flex-shrink: 0; }
+  .flight b { display: block; margin-top: 6px; font-size: 36px; font-weight: 500; }
+  .route { position: absolute; left: 56px; right: 56px; top: 316px; display: flex; align-items: center; justify-content: space-between; }
+  .route .code { display: flex; flex-direction: column; }
+  .route .code.r { align-items: flex-end; }
+  .route .code b { font-family: var(--serif); font-weight: 300; font-size: 124px; line-height: 1; color: #34473A; }
+  .route .code i { font-style: normal; font-size: 24px; color: #3E4A42; margin-top: 10px; white-space: nowrap; }
+  .ask { position: absolute; left: 30px; right: 30px; top: 500px; margin: 0; text-align: center; font-family: var(--script); font-size: 66px; line-height: 1.2; white-space: nowrap; color: #7A5E34; }
+  .grid { position: absolute; left: 56px; right: 56px; top: 632px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 40px; row-gap: 30px; border-top: 1.5px solid #D9C7A4; padding-top: 32px; }
+  .grid b { display: block; margin-top: 6px; font-size: 30px; font-weight: 500; white-space: nowrap; }
+  .roses { position: absolute; left: 690px; top: 772px; width: 190px; height: 148px; }
+  .perf { position: absolute; left: 48px; right: 48px; top: 900px; border-top: 3px dashed #9FB29F; }
+  .notch { position: absolute; top: 872px; width: 60px; height: 60px; border-radius: 50%; background: #34473A; }
+  .stub { position: absolute; left: 56px; right: 56px; top: 934px; display: flex; justify-content: space-between; align-items: center; }
+  .stub .love { font-family: var(--script); font-size: 64px; line-height: 1.1; color: #7A5E34; }
+  .stub .reply { font-size: 24px; letter-spacing: .12em; color: #3E4A42; }
+  .barcode { position: absolute; left: 56px; top: 1040px; width: 748px; height: 96px; }
+  .barcode i { position: absolute; top: 0; bottom: 0; background: #26302A; }
+  .foot { position: absolute; left: 0; right: 0; top: 1144px; text-align: center; font-size: 20px; letter-spacing: .3em; color: #3E4A42; }
+
+  /* Maid of honour: first class in gold */
+  .poster.moh { background: #2B3B30; }
+  .poster.moh .notch { background: #2B3B30; }
+  .poster.moh .band { background: #A07E4B; }
+  .poster.moh .band .air span { color: #FBF3DF; }
+  .poster.moh .band .bp i { color: #2B3B30; font-weight: 500; }
+  .poster.moh .band svg path { stroke: #FBF3DF; }
+  .poster.moh .pass { box-shadow: 0 0 0 6px #B08D57; }
+  .ribbon { position: absolute; right: -58px; top: 172px; width: 260px; transform: rotate(38deg); background: #B08D57; color: #FBF3DF; text-align: center; font-size: 18px; font-weight: 500; letter-spacing: .3em; padding: 10px 0; }
+  .poster:not(.moh) .ribbon { display: none; }
+  .poster.moh .row1 { right: 150px; }
+
+  /* ---------- Passport ---------- */
+  .passport-block { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .book { position: relative; width: min(100%, 300px); aspect-ratio: 88 / 125; perspective: 1600px; margin: .2rem 0 .9rem; }
+  .book .page-wrap { position: absolute; inset: 0; border-radius: 3px 10px 10px 3px; overflow: hidden; background: #F7F2E7; box-shadow: 0 26px 50px -20px rgba(0,0,0,.65); }
+  .book .page-wrap .dp { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .cover {
+    position: absolute; inset: 0; z-index: 2; padding: 0; border: 0; cursor: pointer; background: #121212;
+    border-radius: 3px 10px 10px 3px; transform-origin: left center; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    box-shadow: 0 26px 50px -20px rgba(0,0,0,.7), inset 6px 0 10px -6px rgba(255,255,255,.08);
+    animation: bob 4s ease-in-out infinite;
+  }
+  .cover:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 5px; }
+  .cover .cover-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+  @keyframes bob { 50% { transform: translateY(-5px) rotate(-.6deg); } }
+  .tap { margin: 0; font-family: var(--serif); font-style: italic; font-weight: 300; font-size: 1.05rem; color: #C9D3C5; }
+  .pass-area { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 1.6rem; }
+  .pass-area .label { margin: 0 0 .8rem; font-size: .76rem; letter-spacing: .28em; color: var(--gold-light); }
+
+  /* Data page, designed at 352 x 500 (4 px per mm) */
+  .dp { width: 352px; height: 500px; position: relative; background: #F7F2E7; color: #26302A; font-family: var(--mono); text-align: left; overflow: hidden; }
+  .dp .guil { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .dp .hdr { position: absolute; left: 24px; right: 24px; top: 24px; display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 500; letter-spacing: 2px; color: #5C7A5E; border-bottom: 1px solid #CDBF9F; padding-bottom: 6px; }
+  .dp .photo { position: absolute; left: 24px; top: 62px; width: 100px; height: 126px; border: 1.5px solid #CDBF9F; border-radius: 6px; background: #F1EBDD; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .dp .photo b { font-family: var(--script); font-weight: 400; font-size: 46px; line-height: 1; color: #B8934F; padding-top: 6px; }
+  .dp .photo i { font-style: normal; font-family: var(--serif); font-size: 8.5px; letter-spacing: 1.6px; color: #7A5E34; }
+  .dp .data { position: absolute; left: 140px; right: 20px; top: 58px; }
+  .dp .trio { display: grid; grid-template-columns: .55fr .7fr 1.35fr; gap: 6px; margin-bottom: 8px; }
+  .dp .k { display: block; font-size: 7.5px; letter-spacing: .8px; color: #5C7A5E; text-transform: uppercase; }
+  .dp .v { display: block; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .dp .v.big { font-family: var(--serif); font-weight: 400; font-size: 16px; letter-spacing: .6px; text-transform: uppercase; line-height: 1.25; }
+  .dp .f { margin-bottom: 5px; }
+  .dp .sig { position: absolute; left: 24px; top: 204px; width: 100px; }
+  .dp .sig .s { display: block; font-family: var(--script); font-size: 28px; line-height: 1.15; color: #34473A; border-bottom: 1px solid #999; }
+  .dp .stamp { position: absolute; left: 196px; top: 300px; width: 120px; height: 120px; transform: rotate(-14deg); opacity: 0; }
+  .dp .stamp.on { opacity: .92; }
+  .dp .welcome { position: absolute; left: 24px; top: 318px; width: 160px; margin: 0; font-family: var(--serif); font-style: italic; font-size: 15px; line-height: 1.45; color: #34473A; }
+  .dp .welcome b { display: block; font-family: var(--script); font-style: normal; font-weight: 400; font-size: 26px; color: #7A5E34; margin-top: 4px; }
+  .dp .mrz { position: absolute; left: 16px; right: 12px; bottom: 18px; font-size: 11.6px; line-height: 1.5; white-space: pre; color: #26302A; }
+  @media (prefers-reduced-motion: reduce) { .cover { animation: none; } }
+
+  .capture-host { position: fixed; left: -20000px; top: 0; }
+  @media (prefers-reduced-motion: reduce) { .paper { animation: none; height: 110px; } .result .arrive { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13.5 L22 8 L20.5 5.5 L13 8 L7 3 L5 3.6 L9 9.5 L4.5 11 L2.5 9.5 L1 10 Z M5 16 H19" fill="none" stroke="#E2CB98" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+    <span>F&amp;I Airways</span>
+  </div>
+  <p class="kicker">ONLINE CHECK-IN</p>
+
+  <section class="checkin" id="checkin" aria-labelledby="ciTitle">
+    <h1 id="ciTitle">You have a boarding pass waiting</h1>
+    <p>Start typing your name, then choose it from the list to check in.</p>
+    <label for="nameInput" id="nameLabel">PASSENGER NAME</label>
+    <div class="combo">
+      <input id="nameInput" type="text" autocomplete="off" autocapitalize="words" spellcheck="false"
+        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="nameList" aria-describedby="nameMsg" placeholder="Your name">
+      <ul class="listbox" id="nameList" role="listbox" aria-labelledby="nameLabel" hidden></ul>
+    </div>
+    <p class="msg" id="nameMsg" aria-live="polite"></p>
+    <button class="btn" id="proceed" type="button" disabled>PROCEED TO BOARDING</button>
+  </section>
+
+  <section class="printing" id="printing" hidden aria-live="polite">
+    <div class="slot"></div><div class="paper"></div>
+    <p>ISSUING YOUR PASSPORT</p>
+  </section>
+
+  <section class="result" id="result" hidden>
+    <p class="hello" id="hello"></p>
+    <div class="passport-block">
+      <div class="book" id="book">
+        <div class="page-wrap" id="pageWrap"></div>
+        <button class="cover" id="coverBtn" type="button" aria-label="Open your passport"><svg xmlns="http://www.w3.org/2000/svg" class="cover-art" viewBox="91 3 88 125" preserveAspectRatio="xMidYMid slice"><defs><path id="pArcTop" d="M 117.8 64 A 17.2 17.2 0 0 1 152.2 64"/><path id="pArcBot" d="M 115.4 64 A 19.6 19.6 0 0 0 154.6 64"/></defs><rect width="182" height="131" fill="#121212"/><line x1="91" y1="0" x2="91" y2="131" stroke="#2A2A2A" stroke-width=".3"/><text x="135" y="25" text-anchor="middle" font-family="Cormorant Garamond" font-weight="600" font-size="12.5" letter-spacing="1.1" fill="#C9A45E">PASSPORT</text><text x="135" y="32.5" text-anchor="middle" font-family="Cormorant Garamond" font-weight="600" font-size="3.9" letter-spacing="1.25" fill="#C9A45E">BRIDAL PARTY</text><circle cx="135" cy="64" r="22.5" fill="none" stroke="#C9A45E" stroke-width=".5"/><circle cx="135" cy="64" r="21.6" fill="none" stroke="#C9A45E" stroke-width=".2"/><text font-family="Cormorant Garamond" font-weight="600" font-size="2.9" letter-spacing=".75" fill="#C9A45E"><textPath href="#pArcTop" startOffset="50%" text-anchor="middle">REPUBLIC OF FOREVER</textPath></text><text font-family="Cormorant Garamond" font-weight="600" font-size="2.6" letter-spacing=".7" fill="#C9A45E"><textPath href="#pArcBot" startOffset="50%" text-anchor="middle">LAGOS  ✦  ATLANTA</textPath></text><path d="M129.13 75.04 L128.38 74.60 L127.65 74.11 L126.97 73.58 L126.32 72.99 L125.71 72.36 L125.15 71.70 L124.64 70.99 L124.17 70.25 L123.77 69.48 L123.41 68.68 L123.11 67.86 L122.87 67.02 L122.69 66.17 L122.57 65.31 L122.51 64.44 L122.51 63.56 L122.57 62.69 L122.69 61.83 L122.87 60.98 L123.11 60.14 L123.41 59.32 L123.77 58.52 L124.17 57.75 L124.64 57.01 L125.15 56.30 L125.71 55.64 L126.32 55.01 L126.97 54.42 L127.65 53.89 L128.38 53.40 L129.13 52.96" fill="none" stroke="#C9A45E" stroke-width=".4"/><ellipse cx="128.01" cy="74.36" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(180.0 128.01 74.36) translate(1.75 0)"/><ellipse cx="128.01" cy="74.36" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(248.0 128.01 74.36) translate(1.75 0)"/><ellipse cx="126.01" cy="72.68" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(192.0 126.01 72.68) translate(1.75 0)"/><ellipse cx="126.01" cy="72.68" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(260.0 126.01 72.68) translate(1.75 0)"/><ellipse cx="124.40" cy="70.62" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(204.0 124.40 70.62) translate(1.75 0)"/><ellipse cx="124.40" cy="70.62" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(272.0 124.40 70.62) translate(1.75 0)"/><ellipse cx="123.25" cy="68.28" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(216.0 123.25 68.28) translate(1.75 0)"/><ellipse cx="123.25" cy="68.28" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(284.0 123.25 68.28) translate(1.75 0)"/><ellipse cx="122.62" cy="65.74" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(228.0 122.62 65.74) translate(1.75 0)"/><ellipse cx="122.62" cy="65.74" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(296.0 122.62 65.74) translate(1.75 0)"/><ellipse cx="122.53" cy="63.13" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(240.0 122.53 63.13) translate(1.75 0)"/><ellipse cx="122.53" cy="63.13" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(308.0 122.53 63.13) translate(1.75 0)"/><ellipse cx="122.98" cy="60.55" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(252.0 122.98 60.55) translate(1.75 0)"/><ellipse cx="122.98" cy="60.55" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(320.0 122.98 60.55) translate(1.75 0)"/><ellipse cx="123.96" cy="58.13" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(264.0 123.96 58.13) translate(1.75 0)"/><ellipse cx="123.96" cy="58.13" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(332.0 123.96 58.13) translate(1.75 0)"/><ellipse cx="125.42" cy="55.97" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(276.0 125.42 55.97) translate(1.75 0)"/><ellipse cx="125.42" cy="55.97" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(344.0 125.42 55.97) translate(1.75 0)"/><ellipse cx="127.30" cy="54.15" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(288.0 127.30 54.15) translate(1.75 0)"/><ellipse cx="127.30" cy="54.15" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(356.0 127.30 54.15) translate(1.75 0)"/><ellipse cx="129.13" cy="52.96" rx="1.9" ry=".62" fill="#C9A45E" transform="rotate(332.0 129.13 52.96) translate(1.4 0)"/><path d="M140.87 52.96 L141.62 53.40 L142.35 53.89 L143.03 54.42 L143.68 55.01 L144.29 55.64 L144.85 56.30 L145.36 57.01 L145.83 57.75 L146.23 58.52 L146.59 59.32 L146.89 60.14 L147.13 60.98 L147.31 61.83 L147.43 62.69 L147.49 63.56 L147.49 64.44 L147.43 65.31 L147.31 66.17 L147.13 67.02 L146.89 67.86 L146.59 68.68 L146.23 69.48 L145.83 70.25 L145.36 70.99 L144.85 71.70 L144.29 72.36 L143.68 72.99 L143.03 73.58 L142.35 74.11 L141.62 74.60 L140.87 75.04" fill="none" stroke="#C9A45E" stroke-width=".4"/><ellipse cx="141.99" cy="53.64" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-180.0 141.99 53.64) translate(1.75 0)"/><ellipse cx="141.99" cy="53.64" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-112.0 141.99 53.64) translate(1.75 0)"/><ellipse cx="143.99" cy="55.32" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-168.0 143.99 55.32) translate(1.75 0)"/><ellipse cx="143.99" cy="55.32" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-100.0 143.99 55.32) translate(1.75 0)"/><ellipse cx="145.60" cy="57.38" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-156.0 145.60 57.38) translate(1.75 0)"/><ellipse cx="145.60" cy="57.38" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-88.0 145.60 57.38) translate(1.75 0)"/><ellipse cx="146.75" cy="59.72" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-144.0 146.75 59.72) translate(1.75 0)"/><ellipse cx="146.75" cy="59.72" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-76.0 146.75 59.72) translate(1.75 0)"/><ellipse cx="147.38" cy="62.26" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-132.0 147.38 62.26) translate(1.75 0)"/><ellipse cx="147.38" cy="62.26" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-64.0 147.38 62.26) translate(1.75 0)"/><ellipse cx="147.47" cy="64.87" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-120.0 147.47 64.87) translate(1.75 0)"/><ellipse cx="147.47" cy="64.87" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-52.0 147.47 64.87) translate(1.75 0)"/><ellipse cx="147.02" cy="67.45" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-108.0 147.02 67.45) translate(1.75 0)"/><ellipse cx="147.02" cy="67.45" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-40.0 147.02 67.45) translate(1.75 0)"/><ellipse cx="146.04" cy="69.87" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-96.0 146.04 69.87) translate(1.75 0)"/><ellipse cx="146.04" cy="69.87" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-28.0 146.04 69.87) translate(1.75 0)"/><ellipse cx="144.58" cy="72.03" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-84.0 144.58 72.03) translate(1.75 0)"/><ellipse cx="144.58" cy="72.03" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-16.0 144.58 72.03) translate(1.75 0)"/><ellipse cx="142.70" cy="73.85" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-72.0 142.70 73.85) translate(1.75 0)"/><ellipse cx="142.70" cy="73.85" rx="1.8" ry=".62" fill="#C9A45E" transform="rotate(-4.0 142.70 73.85) translate(1.75 0)"/><ellipse cx="140.87" cy="52.96" rx="1.9" ry=".62" fill="#C9A45E" transform="rotate(-152.0 140.87 52.96) translate(1.4 0)"/><text x="135" y="67.4" text-anchor="middle" font-family="Pinyon Script" font-size="9" fill="#C9A45E">F&amp;I</text><path d="M 135 52.4 l .7 1.6 l 1.6 .7 l -1.6 .7 l -.7 1.6 l -.7 -1.6 l -1.6 -.7 l 1.6 -.7 Z" fill="#C9A45E"/><g transform="translate(156 86) rotate(-28) scale(.66)"><path d="M-10 1.5 L10 -3.5 L8.5 -6 L1 -3.5 L-5 -8.5 L-7 -8 L-3 -2 L-7.5 -0.5 L-9.5 -2 L-11 -1.5 Z" fill="#C9A45E"/></g><text x="135" y="102" text-anchor="middle" font-family="Pinyon Script" font-size="10.5" fill="#C9A45E">Funbi &amp; Iyanu</text><text x="135" y="111" text-anchor="middle" font-family="Cormorant Garamond" font-weight="600" font-size="3.3" letter-spacing=".8" fill="#C9A45E">APRIL 1  &amp;  APRIL 29, 2028</text><g transform="translate(47 56) scale(.55)"><path d="M-10 1.5 L10 -3.5 L8.5 -6 L1 -3.5 L-5 -8.5 L-7 -8 L-3 -2 L-7.5 -0.5 L-9.5 -2 L-11 -1.5 Z" fill="#C9A45E"/></g><text x="47" y="66" text-anchor="middle" font-family="Pinyon Script" font-size="7" fill="#C9A45E">F&amp;I Airways</text><text x="47" y="73" text-anchor="middle" font-family="Cormorant Garamond" font-weight="600" font-size="2.5" letter-spacing=".7" fill="#C9A45E">VALID FOR A LIFETIME OF FRIENDSHIP</text></svg></button>
+      </div>
+      <p class="tap" id="tapHint">Tap your passport to open it</p>
+    </div>
+    <div class="pass-area" id="passArea" hidden>
+      <p class="label">YOUR BOARDING PASS</p>
+      <div class="viewport" id="viewport"></div>
+      <div class="actions">
+        <button class="btn" id="dlPng" type="button">SAVE PASS</button>
+        <button class="btn" id="dlPdf" type="button">SAVE PDF</button>
+      </div>
+      <p class="fine">The PDF includes your boarding pass and your passport page.</p>
+    </div>
+    <button class="ghost" id="restart" type="button">Not you? Start over</button>
+  </section>
+</main>
+
+<template id="dpTpl">
+  <div class="dp">
+    <svg class="guil" viewBox="0 0 88 125" preserveAspectRatio="none" aria-hidden="true"><path d="M0 4.00 L1 4.29 L2 4.57 L3 4.83 L4 5.08 L5 5.29 L6 5.46 L7 5.60 L8 5.70 L9 5.74 L10 5.75 L11 5.71 L12 5.62 L13 5.50 L14 5.35 L15 5.16 L16 4.96 L17 4.74 L18 4.52 L19 4.30 L20 4.08 L21 3.89 L22 3.71 L23 3.56 L24 3.45 L25 3.38 L26 3.34 L27 3.34 L28 3.38 L29 3.45 L30 3.56 L31 3.70 L32 3.86 L33 4.03 L34 4.22 L35 4.41 L36 4.59 L37 4.76 L38 4.91 L39 5.04 L40 5.13 L41 5.19 L42 5.21 L43 5.18 L44 5.12 L45 5.01 L46 4.86 L47 4.68 L48 4.47 L49 4.23 L50 3.97 L51 3.70 L52 3.43 L53 3.16 L54 2.91 L55 2.67 L56 2.46 L57 2.29 L58 2.15 L59 2.06 L60 2.01 L61 2.01 L62 2.05 L63 2.14 L64 2.27 L65 2.44 L66 2.65 L67 2.88 L68 3.13 L69 3.39 L70 3.66 L71 3.92 L72 4.18 L73 4.41 L74 4.62 L75 4.80 L76 4.94 L77 5.04 L78 5.10 L79 5.12 L80 5.10 L81 5.04 L82 4.95 L83 4.82 L84 4.67 L85 4.50 L86 4.32 L87 4.14 L88 3.95" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 9.83 L1 10.02 L2 10.18 L3 10.29 L4 10.36 L5 10.39 L6 10.36 L7 10.30 L8 10.18 L9 10.03 L10 9.85 L11 9.63 L12 9.39 L13 9.14 L14 8.88 L15 8.62 L16 8.37 L17 8.13 L18 7.92 L19 7.74 L20 7.59 L21 7.48 L22 7.40 L23 7.37 L24 7.38 L25 7.43 L26 7.52 L27 7.63 L28 7.78 L29 7.94 L30 8.12 L31 8.30 L32 8.48 L33 8.66 L34 8.81 L35 8.95 L36 9.06 L37 9.13 L38 9.17 L39 9.17 L40 9.13 L41 9.05 L42 8.93 L43 8.78 L44 8.60 L45 8.39 L46 8.17 L47 7.94 L48 7.70 L49 7.46 L50 7.24 L51 7.04 L52 6.86 L53 6.72 L54 6.61 L55 6.55 L56 6.53 L57 6.56 L58 6.63 L59 6.74 L60 6.90 L61 7.10 L62 7.33 L63 7.58 L64 7.86 L65 8.14 L66 8.43 L67 8.71 L68 8.98 L69 9.23 L70 9.46 L71 9.65 L72 9.80 L73 9.91 L74 9.98 L75 10.00 L76 9.98 L77 9.92 L78 9.82 L79 9.68 L80 9.52 L81 9.33 L82 9.13 L83 8.92 L84 8.71 L85 8.50 L86 8.32 L87 8.15 L88 8.01" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 14.72 L1 14.71 L2 14.66 L3 14.56 L4 14.42 L5 14.24 L6 14.03 L7 13.78 L8 13.52 L9 13.24 L10 12.96 L11 12.67 L12 12.40 L13 12.14 L14 11.91 L15 11.71 L16 11.54 L17 11.42 L18 11.33 L19 11.29 L20 11.30 L21 11.34 L22 11.43 L23 11.55 L24 11.70 L25 11.88 L26 12.07 L27 12.27 L28 12.47 L29 12.67 L30 12.86 L31 13.03 L32 13.17 L33 13.28 L34 13.36 L35 13.39 L36 13.40 L37 13.36 L38 13.28 L39 13.17 L40 13.03 L41 12.87 L42 12.68 L43 12.49 L44 12.28 L45 12.08 L46 11.89 L47 11.72 L48 11.57 L49 11.45 L50 11.37 L51 11.32 L52 11.32 L53 11.36 L54 11.44 L55 11.57 L56 11.73 L57 11.94 L58 12.17 L59 12.42 L60 12.70 L61 12.98 L62 13.26 L63 13.54 L64 13.81 L65 14.05 L66 14.26 L67 14.44 L68 14.58 L69 14.67 L70 14.72 L71 14.73 L72 14.68 L73 14.60 L74 14.47 L75 14.31 L76 14.11 L77 13.89 L78 13.66 L79 13.41 L80 13.16 L81 12.92 L82 12.69 L83 12.49 L84 12.31 L85 12.16 L86 12.04 L87 11.97 L88 11.94" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 18.42 L1 18.23 L2 18.01 L3 17.76 L4 17.49 L5 17.20 L6 16.92 L7 16.63 L8 16.36 L9 16.11 L10 15.88 L11 15.68 L12 15.53 L13 15.41 L14 15.34 L15 15.31 L16 15.34 L17 15.40 L18 15.51 L19 15.66 L20 15.83 L21 16.04 L22 16.26 L23 16.50 L24 16.74 L25 16.98 L26 17.20 L27 17.41 L28 17.59 L29 17.74 L30 17.86 L31 17.94 L32 17.98 L33 17.99 L34 17.95 L35 17.88 L36 17.77 L37 17.64 L38 17.48 L39 17.31 L40 17.12 L41 16.94 L42 16.76 L43 16.60 L44 16.46 L45 16.34 L46 16.26 L47 16.21 L48 16.20 L49 16.23 L50 16.30 L51 16.41 L52 16.56 L53 16.74 L54 16.95 L55 17.18 L56 17.43 L57 17.69 L58 17.95 L59 18.20 L60 18.44 L61 18.65 L62 18.84 L63 18.99 L64 19.10 L65 19.16 L66 19.18 L67 19.16 L68 19.08 L69 18.96 L70 18.81 L71 18.61 L72 18.38 L73 18.13 L74 17.87 L75 17.59 L76 17.31 L77 17.04 L78 16.78 L79 16.55 L80 16.34 L81 16.17 L82 16.03 L83 15.93 L84 15.88 L85 15.87 L86 15.90 L87 15.97 L88 16.08" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 21.51 L1 21.24 L2 20.98 L3 20.72 L4 20.47 L5 20.24 L6 20.04 L7 19.87 L8 19.74 L9 19.65 L10 19.61 L11 19.61 L12 19.66 L13 19.76 L14 19.90 L15 20.08 L16 20.29 L17 20.52 L18 20.78 L19 21.05 L20 21.32 L21 21.59 L22 21.85 L23 22.09 L24 22.31 L25 22.49 L26 22.64 L27 22.74 L28 22.81 L29 22.83 L30 22.81 L31 22.76 L32 22.66 L33 22.54 L34 22.39 L35 22.21 L36 22.03 L37 21.84 L38 21.65 L39 21.48 L40 21.31 L41 21.18 L42 21.07 L43 20.99 L44 20.95 L45 20.95 L46 20.98 L47 21.06 L48 21.17 L49 21.31 L50 21.49 L51 21.68 L52 21.89 L53 22.11 L54 22.34 L55 22.55 L56 22.75 L57 22.93 L58 23.09 L59 23.21 L60 23.29 L61 23.33 L62 23.32 L63 23.27 L64 23.18 L65 23.04 L66 22.86 L67 22.65 L68 22.41 L69 22.14 L70 21.86 L71 21.57 L72 21.28 L73 21.00 L74 20.74 L75 20.50 L76 20.29 L77 20.11 L78 19.98 L79 19.88 L80 19.84 L81 19.83 L82 19.88 L83 19.96 L84 20.09 L85 20.24 L86 20.43 L87 20.63 L88 20.85" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 24.87 L1 24.68 L2 24.51 L3 24.37 L4 24.27 L5 24.21 L6 24.20 L7 24.23 L8 24.30 L9 24.43 L10 24.59 L11 24.79 L12 25.02 L13 25.27 L14 25.55 L15 25.84 L16 26.13 L17 26.41 L18 26.68 L19 26.93 L20 27.16 L21 27.35 L22 27.50 L23 27.61 L24 27.67 L25 27.69 L26 27.67 L27 27.60 L28 27.50 L29 27.36 L30 27.19 L31 26.99 L32 26.79 L33 26.57 L34 26.35 L35 26.14 L36 25.94 L37 25.77 L38 25.62 L39 25.50 L40 25.41 L41 25.37 L42 25.36 L43 25.40 L44 25.47 L45 25.57 L46 25.70 L47 25.86 L48 26.04 L49 26.22 L50 26.41 L51 26.60 L52 26.78 L53 26.94 L54 27.08 L55 27.18 L56 27.25 L57 27.28 L58 27.27 L59 27.22 L60 27.12 L61 26.98 L62 26.81 L63 26.60 L64 26.37 L65 26.11 L66 25.84 L67 25.57 L68 25.29 L69 25.03 L70 24.78 L71 24.56 L72 24.37 L73 24.21 L74 24.10 L75 24.03 L76 24.01 L77 24.03 L78 24.10 L79 24.22 L80 24.37 L81 24.56 L82 24.78 L83 25.02 L84 25.27 L85 25.54 L86 25.80 L87 26.05 L88 26.29" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 29.07 L1 29.03 L2 29.02 L3 29.06 L4 29.15 L5 29.27 L6 29.44 L7 29.63 L8 29.86 L9 30.12 L10 30.39 L11 30.67 L12 30.95 L13 31.22 L14 31.48 L15 31.72 L16 31.92 L17 32.10 L18 32.23 L19 32.32 L20 32.37 L21 32.36 L22 32.31 L23 32.22 L24 32.09 L25 31.92 L26 31.71 L27 31.49 L28 31.24 L29 30.99 L30 30.73 L31 30.48 L32 30.25 L33 30.03 L34 29.84 L35 29.69 L36 29.57 L37 29.49 L38 29.45 L39 29.44 L40 29.48 L41 29.56 L42 29.67 L43 29.80 L44 29.96 L45 30.14 L46 30.32 L47 30.50 L48 30.67 L49 30.84 L50 30.98 L51 31.09 L52 31.17 L53 31.22 L54 31.22 L55 31.19 L56 31.12 L57 31.01 L58 30.86 L59 30.69 L60 30.48 L61 30.26 L62 30.02 L63 29.78 L64 29.54 L65 29.30 L66 29.09 L67 28.90 L68 28.74 L69 28.61 L70 28.53 L71 28.49 L72 28.50 L73 28.55 L74 28.65 L75 28.80 L76 28.98 L77 29.19 L78 29.44 L79 29.70 L80 29.98 L81 30.27 L82 30.55 L83 30.83 L84 31.09 L85 31.32 L86 31.52 L87 31.68 L88 31.81" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 33.98 L1 34.09 L2 34.23 L3 34.40 L4 34.61 L5 34.83 L6 35.07 L7 35.32 L8 35.57 L9 35.82 L10 36.05 L11 36.25 L12 36.43 L13 36.57 L14 36.68 L15 36.74 L16 36.75 L17 36.72 L18 36.64 L19 36.52 L20 36.35 L21 36.15 L22 35.92 L23 35.66 L24 35.39 L25 35.11 L26 34.83 L27 34.55 L28 34.29 L29 34.05 L30 33.84 L31 33.66 L32 33.52 L33 33.43 L34 33.37 L35 33.36 L36 33.39 L37 33.46 L38 33.57 L39 33.71 L40 33.88 L41 34.06 L42 34.26 L43 34.46 L44 34.65 L45 34.84 L46 35.01 L47 35.15 L48 35.27 L49 35.35 L50 35.39 L51 35.40 L52 35.37 L53 35.30 L54 35.20 L55 35.06 L56 34.90 L57 34.71 L58 34.51 L59 34.31 L60 34.10 L61 33.90 L62 33.72 L63 33.56 L64 33.42 L65 33.32 L66 33.26 L67 33.24 L68 33.27 L69 33.34 L70 33.45 L71 33.61 L72 33.80 L73 34.02 L74 34.27 L75 34.54 L76 34.82 L77 35.11 L78 35.39 L79 35.67 L80 35.92 L81 36.14 L82 36.34 L83 36.49 L84 36.61 L85 36.68 L86 36.70 L87 36.67 L88 36.61" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 39.07 L1 39.26 L2 39.46 L3 39.67 L4 39.89 L5 40.09 L6 40.29 L7 40.47 L8 40.61 L9 40.73 L10 40.81 L11 40.84 L12 40.83 L13 40.78 L14 40.68 L15 40.54 L16 40.37 L17 40.15 L18 39.91 L19 39.64 L20 39.36 L21 39.08 L22 38.79 L23 38.51 L24 38.25 L25 38.01 L26 37.80 L27 37.63 L28 37.49 L29 37.40 L30 37.36 L31 37.36 L32 37.41 L33 37.50 L34 37.63 L35 37.79 L36 37.99 L37 38.20 L38 38.43 L39 38.66 L40 38.89 L41 39.12 L42 39.33 L43 39.51 L44 39.67 L45 39.79 L46 39.88 L47 39.93 L48 39.94 L49 39.91 L50 39.84 L51 39.74 L52 39.61 L53 39.46 L54 39.29 L55 39.11 L56 38.93 L57 38.74 L58 38.58 L59 38.43 L60 38.30 L61 38.21 L62 38.15 L63 38.13 L64 38.15 L65 38.21 L66 38.31 L67 38.45 L68 38.62 L69 38.83 L70 39.06 L71 39.31 L72 39.57 L73 39.84 L74 40.10 L75 40.34 L76 40.57 L77 40.77 L78 40.94 L79 41.07 L80 41.15 L81 41.19 L82 41.18 L83 41.13 L84 41.03 L85 40.89 L86 40.71 L87 40.50 L88 40.26" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 43.91 L1 44.10 L2 44.27 L3 44.43 L4 44.56 L5 44.67 L6 44.74 L7 44.77 L8 44.76 L9 44.71 L10 44.62 L11 44.49 L12 44.32 L13 44.12 L14 43.89 L15 43.64 L16 43.37 L17 43.10 L18 42.83 L19 42.58 L20 42.34 L21 42.12 L22 41.93 L23 41.79 L24 41.68 L25 41.62 L26 41.60 L27 41.63 L28 41.71 L29 41.83 L30 41.99 L31 42.19 L32 42.41 L33 42.66 L34 42.92 L35 43.19 L36 43.46 L37 43.72 L38 43.96 L39 44.18 L40 44.37 L41 44.53 L42 44.64 L43 44.72 L44 44.76 L45 44.75 L46 44.70 L47 44.62 L48 44.51 L49 44.36 L50 44.20 L51 44.02 L52 43.83 L53 43.65 L54 43.47 L55 43.31 L56 43.16 L57 43.05 L58 42.97 L59 42.92 L60 42.91 L61 42.94 L62 43.01 L63 43.11 L64 43.26 L65 43.43 L66 43.62 L67 43.83 L68 44.06 L69 44.28 L70 44.51 L71 44.72 L72 44.91 L73 45.08 L74 45.22 L75 45.32 L76 45.37 L77 45.39 L78 45.35 L79 45.27 L80 45.15 L81 44.99 L82 44.79 L83 44.56 L84 44.30 L85 44.02 L86 43.74 L87 43.45 L88 43.16" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 48.47 L1 48.59 L2 48.68 L3 48.73 L4 48.75 L5 48.72 L6 48.66 L7 48.56 L8 48.42 L9 48.25 L10 48.06 L11 47.84 L12 47.61 L13 47.38 L14 47.15 L15 46.92 L16 46.71 L17 46.53 L18 46.38 L19 46.26 L20 46.18 L21 46.15 L22 46.16 L23 46.22 L24 46.33 L25 46.47 L26 46.66 L27 46.88 L28 47.12 L29 47.39 L30 47.68 L31 47.96 L32 48.25 L33 48.53 L34 48.78 L35 49.02 L36 49.22 L37 49.39 L38 49.51 L39 49.59 L40 49.63 L41 49.62 L42 49.57 L43 49.48 L44 49.36 L45 49.20 L46 49.02 L47 48.82 L48 48.61 L49 48.39 L50 48.18 L51 47.99 L52 47.81 L53 47.66 L54 47.54 L55 47.45 L56 47.40 L57 47.38 L58 47.41 L59 47.47 L60 47.57 L61 47.70 L62 47.86 L63 48.03 L64 48.22 L65 48.41 L66 48.61 L67 48.79 L68 48.96 L69 49.11 L70 49.22 L71 49.30 L72 49.35 L73 49.35 L74 49.31 L75 49.23 L76 49.10 L77 48.94 L78 48.74 L79 48.51 L80 48.26 L81 47.99 L82 47.71 L83 47.43 L84 47.16 L85 46.90 L86 46.67 L87 46.46 L88 46.29" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 52.98 L1 53.00 L2 52.98 L3 52.92 L4 52.83 L5 52.70 L6 52.54 L7 52.37 L8 52.18 L9 51.98 L10 51.78 L11 51.59 L12 51.41 L13 51.25 L14 51.12 L15 51.02 L16 50.97 L17 50.95 L18 50.97 L19 51.04 L20 51.16 L21 51.31 L22 51.50 L23 51.72 L24 51.97 L25 52.23 L26 52.51 L27 52.80 L28 53.08 L29 53.35 L30 53.59 L31 53.82 L32 54.01 L33 54.16 L34 54.26 L35 54.33 L36 54.35 L37 54.32 L38 54.24 L39 54.13 L40 53.97 L41 53.78 L42 53.57 L43 53.34 L44 53.09 L45 52.84 L46 52.59 L47 52.36 L48 52.14 L49 51.95 L50 51.78 L51 51.66 L52 51.57 L53 51.52 L54 51.51 L55 51.54 L56 51.60 L57 51.70 L58 51.83 L59 51.99 L60 52.16 L61 52.33 L62 52.52 L63 52.69 L64 52.86 L65 53.00 L66 53.12 L67 53.21 L68 53.27 L69 53.29 L70 53.26 L71 53.20 L72 53.09 L73 52.96 L74 52.78 L75 52.58 L76 52.36 L77 52.12 L78 51.87 L79 51.62 L80 51.38 L81 51.15 L82 50.95 L83 50.77 L84 50.63 L85 50.53 L86 50.47 L87 50.46 L88 50.49" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 57.54 L1 57.44 L2 57.32 L3 57.17 L4 57.00 L5 56.82 L6 56.64 L7 56.46 L8 56.29 L9 56.14 L10 56.01 L11 55.92 L12 55.85 L13 55.83 L14 55.84 L15 55.90 L16 55.99 L17 56.13 L18 56.30 L19 56.50 L20 56.72 L21 56.96 L22 57.22 L23 57.47 L24 57.73 L25 57.97 L26 58.18 L27 58.38 L28 58.54 L29 58.66 L30 58.74 L31 58.77 L32 58.76 L33 58.70 L34 58.60 L35 58.45 L36 58.26 L37 58.04 L38 57.80 L39 57.54 L40 57.26 L41 56.98 L42 56.70 L43 56.44 L44 56.19 L45 55.97 L46 55.79 L47 55.64 L48 55.53 L49 55.46 L50 55.43 L51 55.45 L52 55.51 L53 55.60 L54 55.73 L55 55.89 L56 56.06 L57 56.25 L58 56.45 L59 56.64 L60 56.83 L61 56.99 L62 57.14 L63 57.26 L64 57.35 L65 57.40 L66 57.41 L67 57.39 L68 57.32 L69 57.23 L70 57.09 L71 56.93 L72 56.75 L73 56.55 L74 56.34 L75 56.12 L76 55.92 L77 55.72 L78 55.55 L79 55.40 L80 55.29 L81 55.21 L82 55.18 L83 55.19 L84 55.24 L85 55.34 L86 55.48 L87 55.66 L88 55.87" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 61.91 L1 61.73 L2 61.54 L3 61.35 L4 61.16 L5 60.99 L6 60.84 L7 60.72 L8 60.63 L9 60.58 L10 60.56 L11 60.58 L12 60.64 L13 60.73 L14 60.86 L15 61.02 L16 61.21 L17 61.41 L18 61.63 L19 61.85 L20 62.06 L21 62.27 L22 62.46 L23 62.62 L24 62.75 L25 62.84 L26 62.89 L27 62.90 L28 62.87 L29 62.79 L30 62.66 L31 62.50 L32 62.29 L33 62.06 L34 61.80 L35 61.53 L36 61.24 L37 60.95 L38 60.67 L39 60.39 L40 60.15 L41 59.92 L42 59.74 L43 59.59 L44 59.48 L45 59.42 L46 59.41 L47 59.43 L48 59.51 L49 59.62 L50 59.77 L51 59.95 L52 60.15 L53 60.37 L54 60.59 L55 60.82 L56 61.04 L57 61.25 L58 61.44 L59 61.60 L60 61.73 L61 61.82 L62 61.88 L63 61.90 L64 61.88 L65 61.82 L66 61.72 L67 61.60 L68 61.45 L69 61.28 L70 61.10 L71 60.91 L72 60.73 L73 60.55 L74 60.40 L75 60.26 L76 60.16 L77 60.09 L78 60.06 L79 60.06 L80 60.11 L81 60.21 L82 60.34 L83 60.51 L84 60.71 L85 60.93 L86 61.18 L87 61.45 L88 61.71" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 65.82 L1 65.61 L2 65.42 L3 65.26 L4 65.13 L5 65.03 L6 64.97 L7 64.95 L8 64.96 L9 65.02 L10 65.11 L11 65.23 L12 65.38 L13 65.55 L14 65.73 L15 65.92 L16 66.11 L17 66.29 L18 66.45 L19 66.60 L20 66.71 L21 66.79 L22 66.84 L23 66.84 L24 66.80 L25 66.72 L26 66.60 L27 66.44 L28 66.25 L29 66.02 L30 65.77 L31 65.51 L32 65.24 L33 64.96 L34 64.70 L35 64.44 L36 64.22 L37 64.01 L38 63.85 L39 63.72 L40 63.64 L41 63.61 L42 63.62 L43 63.67 L44 63.78 L45 63.92 L46 64.10 L47 64.31 L48 64.55 L49 64.80 L50 65.06 L51 65.33 L52 65.59 L53 65.83 L54 66.06 L55 66.25 L56 66.42 L57 66.54 L58 66.63 L59 66.68 L60 66.68 L61 66.65 L62 66.58 L63 66.47 L64 66.34 L65 66.18 L66 66.00 L67 65.82 L68 65.64 L69 65.46 L70 65.29 L71 65.15 L72 65.03 L73 64.94 L74 64.88 L75 64.87 L76 64.89 L77 64.95 L78 65.05 L79 65.19 L80 65.35 L81 65.55 L82 65.76 L83 65.99 L84 66.22 L85 66.45 L86 66.68 L87 66.88 L88 67.06" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 69.31 L1 69.18 L2 69.08 L3 69.02 L4 69.01 L5 69.03 L6 69.09 L7 69.19 L8 69.32 L9 69.47 L10 69.64 L11 69.82 L12 70.00 L13 70.18 L14 70.35 L15 70.50 L16 70.62 L17 70.72 L18 70.78 L19 70.80 L20 70.78 L21 70.73 L22 70.63 L23 70.50 L24 70.34 L25 70.14 L26 69.93 L27 69.70 L28 69.46 L29 69.22 L30 68.98 L31 68.76 L32 68.57 L33 68.40 L34 68.26 L35 68.17 L36 68.12 L37 68.11 L38 68.15 L39 68.24 L40 68.37 L41 68.54 L42 68.74 L43 68.98 L44 69.24 L45 69.52 L46 69.80 L47 70.09 L48 70.37 L49 70.63 L50 70.88 L51 71.09 L52 71.27 L53 71.41 L54 71.50 L55 71.56 L56 71.57 L57 71.53 L58 71.46 L59 71.34 L60 71.20 L61 71.03 L62 70.84 L63 70.64 L64 70.43 L65 70.22 L66 70.03 L67 69.85 L68 69.69 L69 69.57 L70 69.47 L71 69.41 L72 69.40 L73 69.42 L74 69.47 L75 69.57 L76 69.69 L77 69.84 L78 70.02 L79 70.21 L80 70.41 L81 70.61 L82 70.80 L83 70.97 L84 71.13 L85 71.26 L86 71.35 L87 71.41 L88 71.43" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 72.93 L1 72.94 L2 73.00 L3 73.10 L4 73.23 L5 73.39 L6 73.57 L7 73.76 L8 73.96 L9 74.16 L10 74.36 L11 74.53 L12 74.69 L13 74.82 L14 74.92 L15 74.98 L16 75.00 L17 74.98 L18 74.93 L19 74.84 L20 74.72 L21 74.57 L22 74.39 L23 74.20 L24 74.00 L25 73.79 L26 73.59 L27 73.40 L28 73.24 L29 73.09 L30 72.98 L31 72.91 L32 72.88 L33 72.89 L34 72.94 L35 73.04 L36 73.18 L37 73.36 L38 73.57 L39 73.82 L40 74.08 L41 74.36 L42 74.64 L43 74.93 L44 75.20 L45 75.46 L46 75.70 L47 75.90 L48 76.07 L49 76.19 L50 76.28 L51 76.31 L52 76.30 L53 76.25 L54 76.15 L55 76.01 L56 75.84 L57 75.64 L58 75.42 L59 75.18 L60 74.93 L61 74.69 L62 74.46 L63 74.24 L64 74.04 L65 73.87 L66 73.74 L67 73.64 L68 73.58 L69 73.56 L70 73.58 L71 73.64 L72 73.74 L73 73.86 L74 74.01 L75 74.17 L76 74.35 L77 74.53 L78 74.71 L79 74.88 L80 75.03 L81 75.16 L82 75.26 L83 75.32 L84 75.35 L85 75.33 L86 75.28 L87 75.18 L88 75.05" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 77.32 L1 77.51 L2 77.72 L3 77.94 L4 78.18 L5 78.42 L6 78.65 L7 78.86 L8 79.06 L9 79.23 L10 79.37 L11 79.47 L12 79.54 L13 79.56 L14 79.55 L15 79.50 L16 79.41 L17 79.29 L18 79.15 L19 78.99 L20 78.81 L21 78.62 L22 78.44 L23 78.27 L24 78.11 L25 77.98 L26 77.87 L27 77.80 L28 77.76 L29 77.77 L30 77.81 L31 77.90 L32 78.03 L33 78.19 L34 78.38 L35 78.60 L36 78.85 L37 79.10 L38 79.36 L39 79.62 L40 79.87 L41 80.10 L42 80.31 L43 80.49 L44 80.63 L45 80.73 L46 80.78 L47 80.79 L48 80.75 L49 80.66 L50 80.53 L51 80.36 L52 80.16 L53 79.93 L54 79.67 L55 79.40 L56 79.12 L57 78.85 L58 78.58 L59 78.33 L60 78.11 L61 77.91 L62 77.75 L63 77.63 L64 77.55 L65 77.51 L66 77.51 L67 77.56 L68 77.64 L69 77.76 L70 77.90 L71 78.07 L72 78.25 L73 78.44 L74 78.63 L75 78.82 L76 78.99 L77 79.14 L78 79.26 L79 79.36 L80 79.41 L81 79.43 L82 79.42 L83 79.36 L84 79.26 L85 79.13 L86 78.98 L87 78.79 L88 78.59" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 82.72 L1 82.99 L2 83.25 L3 83.51 L4 83.74 L5 83.94 L6 84.11 L7 84.24 L8 84.33 L9 84.38 L10 84.39 L11 84.36 L12 84.29 L13 84.19 L14 84.05 L15 83.89 L16 83.72 L17 83.53 L18 83.34 L19 83.16 L20 82.99 L21 82.84 L22 82.71 L23 82.61 L24 82.55 L25 82.53 L26 82.54 L27 82.59 L28 82.68 L29 82.81 L30 82.97 L31 83.15 L32 83.36 L33 83.57 L34 83.80 L35 84.02 L36 84.24 L37 84.44 L38 84.61 L39 84.75 L40 84.86 L41 84.93 L42 84.96 L43 84.94 L44 84.88 L45 84.77 L46 84.62 L47 84.43 L48 84.21 L49 83.96 L50 83.69 L51 83.40 L52 83.11 L53 82.82 L54 82.55 L55 82.29 L56 82.06 L57 81.86 L58 81.69 L59 81.57 L60 81.49 L61 81.46 L62 81.47 L63 81.53 L64 81.62 L65 81.76 L66 81.92 L67 82.11 L68 82.32 L69 82.54 L70 82.76 L71 82.98 L72 83.19 L73 83.38 L74 83.54 L75 83.68 L76 83.78 L77 83.84 L78 83.86 L79 83.85 L80 83.79 L81 83.71 L82 83.59 L83 83.44 L84 83.27 L85 83.09 L86 82.90 L87 82.72 L88 82.54" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 88.58 L1 88.79 L2 88.97 L3 89.11 L4 89.20 L5 89.25 L6 89.26 L7 89.22 L8 89.15 L9 89.03 L10 88.88 L11 88.70 L12 88.51 L13 88.30 L14 88.08 L15 87.87 L16 87.66 L17 87.48 L18 87.31 L19 87.17 L20 87.07 L21 87.00 L22 86.97 L23 86.98 L24 87.03 L25 87.12 L26 87.23 L27 87.38 L28 87.54 L29 87.73 L30 87.92 L31 88.11 L32 88.30 L33 88.47 L34 88.63 L35 88.75 L36 88.85 L37 88.90 L38 88.92 L39 88.89 L40 88.82 L41 88.71 L42 88.56 L43 88.38 L44 88.16 L45 87.92 L46 87.65 L47 87.38 L48 87.10 L49 86.83 L50 86.57 L51 86.32 L52 86.11 L53 85.93 L54 85.78 L55 85.68 L56 85.63 L57 85.62 L58 85.66 L59 85.74 L60 85.86 L61 86.03 L62 86.22 L63 86.45 L64 86.69 L65 86.95 L66 87.21 L67 87.46 L68 87.71 L69 87.94 L70 88.14 L71 88.31 L72 88.45 L73 88.54 L74 88.60 L75 88.62 L76 88.59 L77 88.53 L78 88.43 L79 88.31 L80 88.16 L81 87.99 L82 87.81 L83 87.62 L84 87.44 L85 87.28 L86 87.13 L87 87.00 L88 86.90" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 93.93 L1 93.96 L2 93.94 L3 93.88 L4 93.78 L5 93.63 L6 93.45 L7 93.24 L8 93.01 L9 92.77 L10 92.51 L11 92.26 L12 92.02 L13 91.79 L14 91.59 L15 91.41 L16 91.27 L17 91.16 L18 91.10 L19 91.07 L20 91.09 L21 91.14 L22 91.23 L23 91.35 L24 91.49 L25 91.66 L26 91.84 L27 92.02 L28 92.20 L29 92.37 L30 92.52 L31 92.65 L32 92.75 L33 92.82 L34 92.85 L35 92.85 L36 92.80 L37 92.71 L38 92.59 L39 92.43 L40 92.24 L41 92.02 L42 91.79 L43 91.55 L44 91.30 L45 91.06 L46 90.83 L47 90.62 L48 90.43 L49 90.28 L50 90.17 L51 90.10 L52 90.07 L53 90.09 L54 90.16 L55 90.27 L56 90.43 L57 90.62 L58 90.84 L59 91.10 L60 91.37 L61 91.65 L62 91.93 L63 92.21 L64 92.48 L65 92.73 L66 92.95 L67 93.14 L68 93.29 L69 93.41 L70 93.47 L71 93.50 L72 93.48 L73 93.42 L74 93.32 L75 93.19 L76 93.03 L77 92.85 L78 92.65 L79 92.45 L80 92.25 L81 92.05 L82 91.87 L83 91.72 L84 91.59 L85 91.49 L86 91.43 L87 91.40 L88 91.41" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 98.09 L1 97.91 L2 97.70 L3 97.46 L4 97.20 L5 96.93 L6 96.65 L7 96.37 L8 96.10 L9 95.84 L10 95.61 L11 95.41 L12 95.25 L13 95.12 L14 95.04 L15 95.00 L16 95.00 L17 95.05 L18 95.13 L19 95.25 L20 95.40 L21 95.57 L22 95.75 L23 95.95 L24 96.15 L25 96.34 L26 96.52 L27 96.68 L28 96.81 L29 96.91 L30 96.98 L31 97.01 L32 97.00 L33 96.95 L34 96.87 L35 96.75 L36 96.60 L37 96.42 L38 96.23 L39 96.02 L40 95.81 L41 95.61 L42 95.41 L43 95.23 L44 95.08 L45 94.95 L46 94.87 L47 94.82 L48 94.81 L49 94.85 L50 94.94 L51 95.06 L52 95.23 L53 95.43 L54 95.67 L55 95.92 L56 96.20 L57 96.48 L58 96.77 L59 97.05 L60 97.32 L61 97.57 L62 97.78 L63 97.97 L64 98.11 L65 98.21 L66 98.27 L67 98.28 L68 98.24 L69 98.16 L70 98.04 L71 97.88 L72 97.69 L73 97.48 L74 97.26 L75 97.02 L76 96.78 L77 96.55 L78 96.33 L79 96.13 L80 95.96 L81 95.82 L82 95.71 L83 95.65 L84 95.62 L85 95.63 L86 95.68 L87 95.77 L88 95.89" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 101.19 L1 100.90 L2 100.61 L3 100.33 L4 100.05 L5 99.80 L6 99.57 L7 99.37 L8 99.21 L9 99.09 L10 99.01 L11 98.98 L12 99.00 L13 99.06 L14 99.16 L15 99.30 L16 99.47 L17 99.67 L18 99.88 L19 100.11 L20 100.34 L21 100.57 L22 100.79 L23 100.98 L24 101.16 L25 101.30 L26 101.41 L27 101.48 L28 101.52 L29 101.51 L30 101.47 L31 101.38 L32 101.27 L33 101.13 L34 100.97 L35 100.79 L36 100.61 L37 100.43 L38 100.25 L39 100.08 L40 99.94 L41 99.83 L42 99.74 L43 99.70 L44 99.69 L45 99.73 L46 99.80 L47 99.92 L48 100.07 L49 100.26 L50 100.48 L51 100.72 L52 100.98 L53 101.24 L54 101.51 L55 101.77 L56 102.01 L57 102.23 L58 102.42 L59 102.58 L60 102.70 L61 102.77 L62 102.80 L63 102.78 L64 102.71 L65 102.60 L66 102.45 L67 102.26 L68 102.04 L69 101.80 L70 101.53 L71 101.26 L72 100.99 L73 100.72 L74 100.47 L75 100.24 L76 100.04 L77 99.87 L78 99.73 L79 99.64 L80 99.59 L81 99.58 L82 99.61 L83 99.68 L84 99.79 L85 99.93 L86 100.08 L87 100.26 L88 100.45" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 104.11 L1 103.87 L2 103.67 L3 103.49 L4 103.35 L5 103.26 L6 103.21 L7 103.21 L8 103.25 L9 103.34 L10 103.47 L11 103.64 L12 103.85 L13 104.08 L14 104.33 L15 104.59 L16 104.86 L17 105.12 L18 105.37 L19 105.61 L20 105.82 L21 105.99 L22 106.14 L23 106.24 L24 106.30 L25 106.32 L26 106.30 L27 106.24 L28 106.15 L29 106.02 L30 105.87 L31 105.70 L32 105.52 L33 105.34 L34 105.15 L35 104.98 L36 104.82 L37 104.69 L38 104.59 L39 104.52 L40 104.49 L41 104.50 L42 104.54 L43 104.63 L44 104.75 L45 104.90 L46 105.08 L47 105.29 L48 105.51 L49 105.74 L50 105.97 L51 106.19 L52 106.40 L53 106.59 L54 106.75 L55 106.88 L56 106.96 L57 107.01 L58 107.01 L59 106.96 L60 106.87 L61 106.73 L62 106.56 L63 106.35 L64 106.11 L65 105.84 L66 105.56 L67 105.27 L68 104.99 L69 104.71 L70 104.44 L71 104.20 L72 103.99 L73 103.81 L74 103.67 L75 103.58 L76 103.52 L77 103.52 L78 103.56 L79 103.64 L80 103.76 L81 103.91 L82 104.08 L83 104.28 L84 104.49 L85 104.71 L86 104.93 L87 105.13 L88 105.32" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 107.81 L1 107.75 L2 107.73 L3 107.75 L4 107.83 L5 107.94 L6 108.10 L7 108.30 L8 108.53 L9 108.78 L10 109.05 L11 109.34 L12 109.63 L13 109.91 L14 110.18 L15 110.43 L16 110.65 L17 110.84 L18 111.00 L19 111.11 L20 111.18 L21 111.20 L22 111.18 L23 111.12 L24 111.02 L25 110.88 L26 110.72 L27 110.53 L28 110.33 L29 110.12 L30 109.91 L31 109.70 L32 109.52 L33 109.35 L34 109.21 L35 109.10 L36 109.03 L37 108.99 L38 109.00 L39 109.04 L40 109.12 L41 109.23 L42 109.37 L43 109.54 L44 109.72 L45 109.91 L46 110.11 L47 110.30 L48 110.48 L49 110.65 L50 110.78 L51 110.89 L52 110.96 L53 110.99 L54 110.98 L55 110.92 L56 110.83 L57 110.69 L58 110.51 L59 110.30 L60 110.06 L61 109.80 L62 109.53 L63 109.25 L64 108.97 L65 108.70 L66 108.44 L67 108.22 L68 108.02 L69 107.86 L70 107.74 L71 107.66 L72 107.63 L73 107.65 L74 107.72 L75 107.82 L76 107.97 L77 108.15 L78 108.36 L79 108.59 L80 108.84 L81 109.10 L82 109.35 L83 109.59 L84 109.82 L85 110.03 L86 110.21 L87 110.35 L88 110.46" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 112.64 L1 112.77 L2 112.93 L3 113.13 L4 113.36 L5 113.62 L6 113.89 L7 114.18 L8 114.46 L9 114.74 L10 115.00 L11 115.25 L12 115.46 L13 115.64 L14 115.78 L15 115.87 L16 115.92 L17 115.93 L18 115.88 L19 115.80 L20 115.67 L21 115.51 L22 115.31 L23 115.09 L24 114.86 L25 114.61 L26 114.37 L27 114.12 L28 113.90 L29 113.69 L30 113.51 L31 113.36 L32 113.25 L33 113.17 L34 113.14 L35 113.14 L36 113.19 L37 113.27 L38 113.38 L39 113.52 L40 113.68 L41 113.85 L42 114.04 L43 114.22 L44 114.39 L45 114.55 L46 114.69 L47 114.79 L48 114.87 L49 114.91 L50 114.91 L51 114.87 L52 114.79 L53 114.68 L54 114.52 L55 114.34 L56 114.12 L57 113.89 L58 113.65 L59 113.39 L60 113.14 L61 112.90 L62 112.68 L63 112.48 L64 112.32 L65 112.18 L66 112.10 L67 112.05 L68 112.05 L69 112.10 L70 112.19 L71 112.33 L72 112.51 L73 112.72 L74 112.96 L75 113.22 L76 113.50 L77 113.78 L78 114.06 L79 114.33 L80 114.58 L81 114.81 L82 115.01 L83 115.18 L84 115.30 L85 115.38 L86 115.42 L87 115.42 L88 115.37" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 118.15 L1 118.38 L2 118.63 L3 118.89 L4 119.15 L5 119.40 L6 119.63 L7 119.85 L8 120.03 L9 120.18 L10 120.29 L11 120.36 L12 120.38 L13 120.36 L14 120.28 L15 120.17 L16 120.01 L17 119.81 L18 119.59 L19 119.34 L20 119.07 L21 118.79 L22 118.52 L23 118.24 L24 117.99 L25 117.75 L26 117.54 L27 117.37 L28 117.23 L29 117.14 L30 117.08 L31 117.07 L32 117.10 L33 117.17 L34 117.28 L35 117.42 L36 117.58 L37 117.76 L38 117.95 L39 118.14 L40 118.33 L41 118.51 L42 118.67 L43 118.81 L44 118.91 L45 118.98 L46 119.02 L47 119.02 L48 118.98 L49 118.90 L50 118.78 L51 118.64 L52 118.46 L53 118.27 L54 118.06 L55 117.85 L56 117.63 L57 117.43 L58 117.24 L59 117.07 L60 116.93 L61 116.83 L62 116.77 L63 116.75 L64 116.77 L65 116.84 L66 116.95 L67 117.10 L68 117.29 L69 117.52 L70 117.77 L71 118.04 L72 118.32 L73 118.61 L74 118.90 L75 119.17 L76 119.43 L77 119.66 L78 119.86 L79 120.02 L80 120.13 L81 120.21 L82 120.24 L83 120.22 L84 120.16 L85 120.05 L86 119.91 L87 119.74 L88 119.54" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/><path d="M0 123.54 L1 123.75 L2 123.95 L3 124.13 L4 124.29 L5 124.41 L6 124.49 L7 124.53 L8 124.53 L9 124.48 L10 124.38 L11 124.24 L12 124.07 L13 123.85 L14 123.61 L15 123.35 L16 123.07 L17 122.78 L18 122.49 L19 122.21 L20 121.94 L21 121.70 L22 121.49 L23 121.31 L24 121.18 L25 121.09 L26 121.04 L27 121.04 L28 121.08 L29 121.16 L30 121.29 L31 121.44 L32 121.63 L33 121.83 L34 122.05 L35 122.28 L36 122.50 L37 122.72 L38 122.92 L39 123.09 L40 123.24 L41 123.35 L42 123.43 L43 123.47 L44 123.47 L45 123.44 L46 123.36 L47 123.26 L48 123.12 L49 122.96 L50 122.79 L51 122.60 L52 122.41 L53 122.23 L54 122.06 L55 121.91 L56 121.79 L57 121.69 L58 121.63 L59 121.62 L60 121.64 L61 121.70 L62 121.81 L63 121.96 L64 122.14 L65 122.35 L66 122.59 L67 122.84 L68 123.11 L69 123.38 L70 123.65 L71 123.90 L72 124.14 L73 124.34 L74 124.52 L75 124.65 L76 124.75 L77 124.79 L78 124.79 L79 124.75 L80 124.66 L81 124.52 L82 124.35 L83 124.14 L84 123.91 L85 123.66 L86 123.39 L87 123.12 L88 122.86" fill="none" stroke="#5C7A5E" stroke-opacity=".11" stroke-width=".22"/></svg>
+    <div class="hdr"><span>PASSPORT</span><span>REPUBLIC OF FOREVER</span></div>
+    <div class="photo"><b>F&amp;I</b><i data-d="roleCaps"></i></div>
+    <div class="data">
+      <div class="trio">
+        <div><span class="k">Type</span><span class="v">P</span></div>
+        <div><span class="k">Code</span><span class="v">FNI</span></div>
+        <div><span class="k">Passport No.</span><span class="v" data-d="num"></span></div>
+      </div>
+      <div class="f"><span class="k">Surname</span><span class="v big" data-d="surname"></span></div>
+      <div class="f"><span class="k">Given names</span><span class="v big" data-d="given"></span></div>
+      <div class="f"><span class="k">Nationality</span><span class="v">Bridal Party</span></div>
+      <div class="f"><span class="k">Role</span><span class="v" data-d="role"></span></div>
+      <div class="f"><span class="k">Date of issue</span><span class="v">26 SEP 2026</span></div>
+      <div class="f"><span class="k">Valid until</span><span class="v">Forever</span></div>
+      <div class="f"><span class="k">Authority</span><span class="v">The Bride</span></div>
+    </div>
+    <div class="sig"><span class="k">Signature of the bride</span><span class="s">Funbi</span></div>
+    <p class="welcome" data-d="welcome"></p>
+    <img class="stamp" alt="" data-stamp>
+    <div class="mrz" data-d="mrz"></div>
+  </div>
+</template>
+<template id="passTpl">
+  <div class="poster">
+    <div class="f1"></div><div class="f2"></div>
+    <div class="pass">
+      <div class="band">
+        <div class="air"><svg width="44" height="44" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13.5 L22 8 L20.5 5.5 L13 8 L7 3 L5 3.6 L9 9.5 L4.5 11 L2.5 9.5 L1 10 Z M5 16 H19" fill="none" stroke="#D9C091" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg><span>F&amp;I Airways</span></div>
+        <div class="bp"><b>BOARDING PASS</b><i data-f="cls"></i></div>
+      </div>
+      <div class="ribbon">FIRST CLASS</div>
+      <div class="row1">
+        <div style="min-width:0; flex:1 1 auto"><span class="lbl">PASSENGER</span><span class="pname" data-f="name"></span></div>
+        <div class="flight"><span class="lbl">FLIGHT</span><b data-f="flight"></b></div>
+      </div>
+      <div class="route">
+        <div class="code"><b>BFF</b><i>Best Friend Forever</i></div>
+        <svg width="220" height="80" viewBox="0 0 170 44" aria-hidden="true"><path d="M6 36 C 50 4, 120 4, 164 36" fill="none" stroke="#B08D57" stroke-width="1.4" stroke-dasharray="3 5" stroke-linecap="round"/><circle cx="6" cy="36" r="3" fill="#B08D57"/><circle cx="164" cy="36" r="3" fill="#B08D57"/><path transform="translate(85 13)" d="M-10 1.5 L10 -3.5 L8.5 -6 L1 -3.5 L-5 -8.5 L-7 -8 L-3 -2 L-7.5 -0.5 L-9.5 -2 L-11 -1.5 Z" fill="#34473A"/></svg>
+        <div class="code r"><b data-f="to"></b><i data-f="toName"></i></div>
+      </div>
+      <p class="ask" data-f="ask"></p>
+      <div class="grid">
+        <div><span class="lbl">DESTINATIONS</span><b>Lagos &amp; Atlanta</b></div>
+        <div><span class="lbl">BOARDING</span><b data-f="boarding"></b></div>
+        <div><span class="lbl">GATE</span><b>Forever</b></div>
+        <div><span class="lbl">SEAT</span><b data-f="seat"></b></div>
+      </div>
+      <img class="roses" alt="" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSItMTQgLTE0IDE3OCAxMzgiIHdpZHRoPSIxNzgiIGhlaWdodD0iMTM4IiB4bWxuczpjMnBhPSJodHRwOi8vYzJwYS5vcmcvbWFuaWZlc3QiPjxtZXRhZGF0YT48YzJwYTptYW5pZmVzdD5BQUFXZ21wMWJXSUFBQUFlYW5WdFpHTXljR0VBRVFBUWdBQUFxZ0E0bTNFRFl6SndZUUFBQUJaY2FuVnRZZ0FBQUVkcWRXMWtZekp0WVFBUkFCQ0FBQUNxQURpYmNRTjFjbTQ2WXpKd1lUcGlNREkyT1daaU9TMWpZMlV5TFRSaVpUVXRZVGsxT0MwMFpqWTBZekpoTVRCaU4yTUFBQUFEbDJwMWJXSUFBQUFwYW5WdFpHTXlZWE1BRVFBUWdBQUFxZ0E0bTNFRFl6SndZUzVoYzNObGNuUnBiMjV6QUFBQUFMeHFkVzFpQUFBQVJHcDFiV1JqWW05eUFCRUFFSUFBQUtvQU9KdHhFMk15Y0dFdWFXNW5jbVZrYVdWdWRDNTJNd0FBQUFBWVl6SnphTjRJck8vRGF4SDJDRk5RZkxIMXUvQUFBQUJ3WTJKdmNxTnBaR002Wm05eWJXRjBiV2x0WVdkbEwzTjJaeXQ0Yld4cWFXNXpkR0Z1WTJWSlJIZ3NlRzF3T21scFpEb3laakJqWkdWak9DMDVNR05sTFRRelpEVXRPVFJqTnkwellUTTFaR0prWkRCaU4yTnNjbVZzWVhScGIyNXphR2x3YUhCaGNtVnVkRTltQUFBQjRtcDFiV0lBQUFCQmFuVnRaR05pYjNJQUVRQVFnQUFBcWdBNG0zRVRZekp3WVM1aFkzUnBiMjV6TG5ZeUFBQUFBQmhqTW5Ob21SWTBZQm94YjNGbExaZjdpNjRDSkFBQUFabGpZbTl5b21kaFkzUnBiMjV6Z3FKbVlXTjBhVzl1YTJNeWNHRXViM0JsYm1Wa2FuQmhjbUZ0WlhSbGNuT2hhMmx1WjNKbFpHbGxiblJ6Z2FKamRYSnNlQzF6Wld4bUkycDFiV0ptUFdNeWNHRXVZWE56WlhKMGFXOXVjeTlqTW5CaExtbHVaM0psWkdsbGJuUXVkak5rYUdGemFGZ2cwc2o1dGFpSHJQM21Gb1lrb3R6aFN0bkUxM3EvcWFjNzZrZ3JBajllSFFha1ptRmpkR2x2Ym5nZFkyOXRMbUZ1ZEdoeWIzQnBZeTVqYkdGMVpHVXVjSEp2ZG1sa1pXUnFjR0Z5WVcxbGRHVnljNkY0SDJOdmJTNWhiblJvY205d2FXTXViM0pwWjJsdUxXTnZibVpwWkdWdVkyVm5kVzVyYm05M2JtdGtaWE5qY21sd2RHbHZibmhtUTJ4aGRXUmxJSEJ5YjNacFpHVmtJSFJvYVhNZ1ptbHNaU0JoZENCMGFHVWdjbVZ4ZFdWemRDQnZaaUJoSUhWelpYSWdZVzVrSUcxaGVTQm9ZWFpsSUdOeVpXRjBaV1FnYjNJZ2JXOWthV1pwWldRZ2RHaGxJR1pwYkdVZ1kyOXVkR1Z1ZEhNdWJYTnZablIzWVhKbFFXZGxiblNoWkc1aGJXVm1RMnhoZFdSbGNtRnNiRUZqZEdsdmJuTkpibU5zZFdSbFpQVUFBQURJYW5WdFlnQUFBRUJxZFcxa1kySnZjZ0FSQUJDQUFBQ3FBRGliY1JOak1uQmhMbWhoYzJndVpHRjBZUUFBQUFBWVl6SnphQkdrSEZWRS90RkdpdUNRQjFFVUlLUUFBQUNBWTJKdmNxVmpZV3huWm5Ob1lUSTFObU53WVdSTkFBQUFBQUFBQUFBQUFBQUFBR1JvWVhOb1dDQjdWMUF2YmRDdGpDaFlkUlhsY3lMcFdxMzlKTmNjWDhyWHZ5YVUzbXRCL21SdVlXMWxibXAxYldKbUlHMWhibWxtWlhOMGFtVjRZMngxYzJsdmJuT0JvbVZ6ZEdGeWRCakZabXhsYm1kMGFCa2VCQUFBQWo1cWRXMWlBQUFBSjJwMWJXUmpNbU5zQUJFQUVJQUFBS29BT0p0eEEyTXljR0V1WTJ4aGFXMHVkaklBQUFBQ0QyTmliM0tsWTJGc1oyWnphR0V5TlRacGMybG5ibUYwZFhKbGVFMXpaV3htSTJwMWJXSm1QUzlqTW5CaEwzVnlianBqTW5CaE9tSXdNalk1Wm1JNUxXTmpaVEl0TkdKbE5TMWhPVFU0TFRSbU5qUmpNbUV4TUdJM1l5OWpNbkJoTG5OcFoyNWhkSFZ5WldwcGJuTjBZVzVqWlVsRWVDeDRiWEE2YVdsa09tTmhNMkZsWkdaaExXTTNaVGN0TkdVNU9TMWhZVEF4TFRBeU56WTRNRFZoTXpOaE0zSmpjbVZoZEdWa1gyRnpjMlZ5ZEdsdmJuT0RvbU4xY214NExYTmxiR1lqYW5WdFltWTlZekp3WVM1aGMzTmxjblJwYjI1ekwyTXljR0V1YVc1bmNtVmthV1Z1ZEM1Mk0yUm9ZWE5vV0NEU3lQbTFxSWVzL2VZV2hpU2kzT0ZLMmNUWGVyK3BwenZxU0NzQ1AxNGRCcUpqZFhKc2VDcHpaV3htSTJwMWJXSm1QV015Y0dFdVlYTnpaWEowYVc5dWN5OWpNbkJoTG1GamRHbHZibk11ZGpKa2FHRnphRmdnSFFBRUxNZVJqREZESlRsalFnQm90SDIzT1RmYVk3b0NzTXlaTjZ5RERCaWlZM1Z5YkhncGMyVnNaaU5xZFcxaVpqMWpNbkJoTG1GemMyVnlkR2x2Ym5Ndll6SndZUzVvWVhOb0xtUmhkR0ZrYUdGemFGZ2c3Sy9yajlDNU01UFovbVZvZ3pnTC96R2FlZmJYWjJtN1hjazNEUXJCN04xMFkyeGhhVzFmWjJWdVpYSmhkRzl5WDJsdVptK2paRzVoYldWdlFXNTBhSEp2Y0dsaklFWnBiR1Z6WjNabGNuTnBiMjVsTVM0d0xqQnJjM0JsWTFabGNuTnBiMjVsTWk0MExqQUFBQkE0YW5WdFlnQUFBQ2hxZFcxa1l6Smpjd0FSQUJDQUFBQ3FBRGliY1FOak1uQmhMbk5wWjI1aGRIVnlaUUFBQUJBSVkySnZjdEtFV1FJU29nRW1HQ0ZaQWdvd2dnSUdNSUlCamFBREFnRUNBaFJBNWFBSzdzSTUwTDY0Zy9vR1FnVTlaMVVUQURBS0JnZ3Foa2pPUFFRREF6QkpNUmN3RlFZRFZRUUtFdzVCYm5Sb2NtOXdhV01zSUZCQ1F6RXVNQ3dHQTFVRUF4TWxRVzUwYUhKdmNHbGpJRU52Ym5SbGJuUWdRM0psWkdWdWRHbGhiSE1nVW05dmRDQkRRVEFlRncweU5qQTRNRGN4T0RRek5UWmFGdzB5T0RBNE1EWXhPVFF6TlRaYU1FUXhGekFWQmdOVkJBb1REa0Z1ZEdoeWIzQnBZeXdnVUVKRE1Ta3dKd1lEVlFRREV5QkJiblJvY205d2FXTWdRMnhoZFdSbElFTnZiblJsYm5RZ1UybG5ibWx1WnpCWk1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQkpoNkNtdkxVQmdGRk5VMHZVS2xPVnRFNmRqZDE3TDVTdXdYMExlbUZpc0JNM2RrZC8zY3lqeEZBM1FvNVM0NmZYMC9paFkwVlo3bWZiOUtGNzAzdDVPaldEQldNQTRHQTFVZER3RUIvd1FFQXdJSGdEQVZCZ05WSFNVRURqQU1CZ29yQmdFRUFZUG9YZ0lCTUF3R0ExVWRFd0VCL3dRQ01BQXdId1lEVlIwakJCZ3dGb0FVemxIaUJJRk9aRnNqK09QRXo1bytuTUhYWE1Jd0NnWUlLb1pJemowRUF3TURad0F3WkFJd01YTWRGSjRCZXRMTFZZN09SdUU5bm9xYmJBWk9abi9hQXJYeVR3RkFaZktyUHp4RjJ2UG9KTmYxK1VDZGcxWEdBakJ3WDF6ZDlXR3FZa3FtTDVTRnF3MVF5U2pyMXpKZnBKTTkrMXJkRHdTUExNT1BPakt1aVhqb1UvcFVVZUc5UndtaFkzQmhaRmtObmdBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFQWllRTi9razk0L2I1VEF6MTBkMkhWSS9CdGQwMExHb202ZC9SVWFKcFVuWVJ5bVpKRWpDc0kxWElQSXd1VUxGSERKaHY3aFNRcEZGanJQOE9xQlJWYmFIcXM9PC9jMnBhOm1hbmlmZXN0PjwvbWV0YWRhdGE+PGRlZnM+PHJhZGlhbEdyYWRpZW50IGlkPSJyZyIgY3g9IjUwJSIgY3k9IjUwJSIgcj0iNjAlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNFREU1RDQiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI0ZCRjhGMiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0ZGRkZGRiIvPjwvcmFkaWFsR3JhZGllbnQ+PHJhZGlhbEdyYWRpZW50IGlkPSJyZzIiIGN4PSI1MCUiIGN5PSI0NSUiIHI9IjYwJSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjRTREQUM2Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRjhGNEVDIi8+PC9yYWRpYWxHcmFkaWVudD48c3ltYm9sIGlkPSJwZXRhbCIgdmlld0JveD0iLTIwIC0yMCA0MCA0MCIgb3ZlcmZsb3c9InZpc2libGUiPjxwYXRoIGQ9Ik0wIDAgQy0xMSAtNSAtMTQgLTE3IDAgLTE5IEMxNCAtMTcgMTEgLTUgMCAwWiIvPjwvc3ltYm9sPjxnIGlkPSJyb3NlIj48dXNlIHhsaW5rOmhyZWY9IiNwZXRhbCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiB4PSItMjAiIHk9Ii0yMCIgdHJhbnNmb3JtPSJyb3RhdGUoMCkiIGZpbGw9InVybCgjcmcpIiBzdHJva2U9IiNEOENGQkQiIHN0cm9rZS13aWR0aD0iLjUiLz48dXNlIHhsaW5rOmhyZWY9IiNwZXRhbCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiB4PSItMjAiIHk9Ii0yMCIgdHJhbnNmb3JtPSJyb3RhdGUoNzIpIiBmaWxsPSJ1cmwoI3JnKSIgc3Ryb2tlPSIjRDhDRkJEIiBzdHJva2Utd2lkdGg9Ii41Ii8+PHVzZSB4bGluazpocmVmPSIjcGV0YWwiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgeD0iLTIwIiB5PSItMjAiIHRyYW5zZm9ybT0icm90YXRlKDE0NCkiIGZpbGw9InVybCgjcmcpIiBzdHJva2U9IiNEOENGQkQiIHN0cm9rZS13aWR0aD0iLjUiLz48dXNlIHhsaW5rOmhyZWY9IiNwZXRhbCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiB4PSItMjAiIHk9Ii0yMCIgdHJhbnNmb3JtPSJyb3RhdGUoMjE2KSIgZmlsbD0idXJsKCNyZykiIHN0cm9rZT0iI0Q4Q0ZCRCIgc3Ryb2tlLXdpZHRoPSIuNSIvPjx1c2UgeGxpbms6aHJlZj0iI3BldGFsIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHg9Ii0yMCIgeT0iLTIwIiB0cmFuc2Zvcm09InJvdGF0ZSgyODgpIiBmaWxsPSJ1cmwoI3JnKSIgc3Ryb2tlPSIjRDhDRkJEIiBzdHJva2Utd2lkdGg9Ii41Ii8+PHVzZSB4bGluazpocmVmPSIjcGV0YWwiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgeD0iLTIwIiB5PSItMjAiIHRyYW5zZm9ybT0icm90YXRlKDM2KSBzY2FsZSguNjgpIiBmaWxsPSJ1cmwoI3JnKSIgc3Ryb2tlPSIjRDJDOEI0IiBzdHJva2Utd2lkdGg9Ii42Ii8+PHVzZSB4bGluazpocmVmPSIjcGV0YWwiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgeD0iLTIwIiB5PSItMjAiIHRyYW5zZm9ybT0icm90YXRlKDEwOCkgc2NhbGUoLjY4KSIgZmlsbD0idXJsKCNyZykiIHN0cm9rZT0iI0QyQzhCNCIgc3Ryb2tlLXdpZHRoPSIuNiIvPjx1c2UgeGxpbms6aHJlZj0iI3BldGFsIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHg9Ii0yMCIgeT0iLTIwIiB0cmFuc2Zvcm09InJvdGF0ZSgxODApIHNjYWxlKC42OCkiIGZpbGw9InVybCgjcmcpIiBzdHJva2U9IiNEMkM4QjQiIHN0cm9rZS13aWR0aD0iLjYiLz48dXNlIHhsaW5rOmhyZWY9IiNwZXRhbCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiB4PSItMjAiIHk9Ii0yMCIgdHJhbnNmb3JtPSJyb3RhdGUoMjUyKSBzY2FsZSguNjgpIiBmaWxsPSJ1cmwoI3JnKSIgc3Ryb2tlPSIjRDJDOEI0IiBzdHJva2Utd2lkdGg9Ii42Ii8+PHVzZSB4bGluazpocmVmPSIjcGV0YWwiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgeD0iLTIwIiB5PSItMjAiIHRyYW5zZm9ybT0icm90YXRlKDMyNCkgc2NhbGUoLjY4KSIgZmlsbD0idXJsKCNyZykiIHN0cm9rZT0iI0QyQzhCNCIgc3Ryb2tlLXdpZHRoPSIuNiIvPjx1c2UgeGxpbms6aHJlZj0iI3BldGFsIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHg9Ii0yMCIgeT0iLTIwIiB0cmFuc2Zvcm09InJvdGF0ZSgxMCkgc2NhbGUoLjQyKSIgZmlsbD0idXJsKCNyZzIpIiBzdHJva2U9IiNDQkJGQTgiIHN0cm9rZS13aWR0aD0iLjgiLz48dXNlIHhsaW5rOmhyZWY9IiNwZXRhbCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiB4PSItMjAiIHk9Ii0yMCIgdHJhbnNmb3JtPSJyb3RhdGUoMTMwKSBzY2FsZSguNDIpIiBmaWxsPSJ1cmwoI3JnMikiIHN0cm9rZT0iI0NCQkZBOCIgc3Ryb2tlLXdpZHRoPSIuOCIvPjx1c2UgeGxpbms6aHJlZj0iI3BldGFsIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHg9Ii0yMCIgeT0iLTIwIiB0cmFuc2Zvcm09InJvdGF0ZSgyNTApIHNjYWxlKC40MikiIGZpbGw9InVybCgjcmcyKSIgc3Ryb2tlPSIjQ0JCRkE4IiBzdHJva2Utd2lkdGg9Ii44Ii8+PHBhdGggZD0iTS0yLjUgMSBDLTMuNSAtMi41IDEgLTQuNSAzIC0xLjggQzQuNiAxIDEuMiAzLjYgLTEuNiAyLjYgQy00LjIgMS40IC0zIC0zLjIgLjggLTMuNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjQkZCMjlBIiBzdHJva2Utd2lkdGg9Ii43IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L2c+PGcgaWQ9ImxlYWYiPjxwYXRoIGQ9Ik0wIDAgQzYgLTUgMTUgLTUgMjIgMCBDMTUgNSA2IDUgMCAwWiIgZmlsbD0iIzZGOEM3MCIvPjxwYXRoIGQ9Ik0xIDAgTDIwIDAiIHN0cm9rZT0iIzRGNkE1MiIgc3Ryb2tlLXdpZHRoPSIuNSIvPjwvZz48L2RlZnM+PHVzZSB4bGluazpocmVmPSIjbGVhZiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNzEuMyA3Ny4zKSByb3RhdGUoMTU0KSBzY2FsZSgxLjU5KSIvPjx1c2UgeGxpbms6aHJlZj0iI2xlYWYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDg3LjIgNTIuNykgcm90YXRlKDI3MSkgc2NhbGUoMS42NSkiLz48dXNlIHhsaW5rOmhyZWY9IiNsZWFmIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMTUuOCAxNi41KSByb3RhdGUoMjc5KSBzY2FsZSgxLjMyKSIvPjx1c2UgeGxpbms6aHJlZj0iI2xlYWYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk4LjcgMjkuNSkgcm90YXRlKDE4Nykgc2NhbGUoMS43MikiLz48dXNlIHhsaW5rOmhyZWY9IiNsZWFmIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0Mi40IDI0LjIpIHJvdGF0ZSgyNTMpIHNjYWxlKDEuNTYpIi8+PHVzZSB4bGluazpocmVmPSIjbGVhZiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNjEuNiA1My4wKSByb3RhdGUoNDApIHNjYWxlKDEuODkpIi8+PHVzZSB4bGluazpocmVmPSIjbGVhZiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzMuNCA4Mi4yKSByb3RhdGUoMTM1KSBzY2FsZSgxLjIwKSIvPjx1c2UgeGxpbms6aHJlZj0iI2xlYWYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI5LjkgNzUuMSkgcm90YXRlKDE3Mikgc2NhbGUoMS4yOSkiLz48dXNlIHhsaW5rOmhyZWY9IiNsZWFmIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMzUuOCA1NC4wKSByb3RhdGUoMzQ4KSBzY2FsZSgxLjMyKSIvPjx1c2UgeGxpbms6aHJlZj0iI2xlYWYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEwOC42IDUxLjApIHJvdGF0ZSgyMDUpIHNjYWxlKDEuMzMpIi8+PHVzZSB4bGluazpocmVmPSIjbGVhZiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNjMuOCAzNS4xKSByb3RhdGUoMTk2KSBzY2FsZSgxLjc2KSIvPjx1c2UgeGxpbms6aHJlZj0iI2xlYWYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDkwLjQgNTEuOCkgcm90YXRlKDQ4KSBzY2FsZSgxLjYyKSIvPjx1c2UgeGxpbms6aHJlZj0iI2xlYWYiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDExMi4xIDcwLjYpIHJvdGF0ZSgyNTQpIHNjYWxlKDAuOTkpIi8+PHVzZSB4bGluazpocmVmPSIjbGVhZiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTE2LjkgNzAuMykgcm90YXRlKDI3OCkgc2NhbGUoMS4xNSkiLz48dXNlIHhsaW5rOmhyZWY9IiNyb3NlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMTMuNSAzMS4yKSByb3RhdGUoODkpIHNjYWxlKDEuMjQpIi8+PHVzZSB4bGluazpocmVmPSIjcm9zZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNzkuNSAzOS42KSByb3RhdGUoMTY3KSBzY2FsZSgxLjM2KSIvPjx1c2UgeGxpbms6aHJlZj0iI3Jvc2UiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ3LjggNDEuNCkgcm90YXRlKDI3Nikgc2NhbGUoMS41MCkiLz48dXNlIHhsaW5rOmhyZWY9IiNyb3NlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMjEuNyA1Ny4xKSByb3RhdGUoODUpIHNjYWxlKDEuMjApIi8+PHVzZSB4bGluazpocmVmPSIjcm9zZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoODYuOCA2OS45KSByb3RhdGUoMzM5KSBzY2FsZSgxLjQzKSIvPjx1c2UgeGxpbms6aHJlZj0iI3Jvc2UiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQyLjMgNzMuMykgcm90YXRlKDIyMikgc2NhbGUoMS4wNSkiLz48dXNlIHhsaW5rOmhyZWY9IiNyb3NlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMTUuMyA4Mi4wKSByb3RhdGUoNjcpIHNjYWxlKDAuOTgpIi8+PC9zdmc+">
+      <div class="perf"></div>
+      <div class="notch" style="left:-30px"></div><div class="notch" style="right:-30px"></div>
+      <div class="stub"><span class="love">Love, Funbi</span><span class="reply" data-f="reply"></span></div>
+      <div class="barcode" aria-hidden="true"><i style="left:2.57%;width:0.74%"></i><i style="left:8.09%;width:1.47%"></i><i style="left:13.24%;width:2.94%"></i><i style="left:16.91%;width:0.74%"></i><i style="left:18.75%;width:1.47%"></i><i style="left:27.21%;width:0.74%"></i><i style="left:28.68%;width:1.47%"></i><i style="left:31.62%;width:0.74%"></i><i style="left:33.09%;width:1.47%"></i><i style="left:40.81%;width:1.47%"></i><i style="left:52.21%;width:0.74%"></i><i style="left:54.41%;width:2.94%"></i><i style="left:67.28%;width:2.94%"></i><i style="left:71.32%;width:1.47%"></i><i style="left:73.90%;width:2.94%"></i><i style="left:84.19%;width:0.74%"></i><i style="left:91.18%;width:1.47%"></i><i style="left:95.59%;width:0.74%"></i><i style="left:97.43%;width:0.74%"></i><i style="left:99.63%;width:1.47%"></i></div>
+      <div class="foot" data-f="foot"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+/* ============================================================
+   PASSENGER LIST. Add each name exactly as it should print.
+   role: "maid-of-honour" or "bridesmaid"
+   ============================================================ */
+const PASSENGERS = [
+  { name: "Faith Nwake", role: "maid-of-honour" },
+  { name: "Favour Aibangbee", role: "bridesmaid" },
+  { name: "Given Brown", role: "bridesmaid" },
+  { name: "Sarah Brown", role: "bridesmaid" },
+  { name: "Anna Addison", role: "bridesmaid" },
+  { name: "Dami Adekanle", role: "bridesmaid" },
+  { name: "Tomi Olabosinde", role: "bridesmaid" },
+  { name: "Deborah Osime", role: "bridesmaid" },
+  { name: "Adeola Ogunderu", role: "bridesmaid" },
+  { name: "Teni Olasanya", role: "bridesmaid" },
+  { name: "Enedu David-Maji", role: "bridesmaid" },
+  { name: "Fisayo Ojo", role: "bridesmaid" },
+  { name: "Fola Ojo", role: "bridesmaid" }
+];
+const REPLY_BY = "[DATE]";   // e.g. "MAY 1, 2027"
+
+/* How each pass reads */
+const ROLES = {
+  "bridesmaid": {
+    cls: "BRIDAL CLASS", flight: "FI 2028", to: "BRD", toName: "Bridesmaid",
+    ask: "Will you be my bridesmaid?", seat: "By my side", boarding: "Now", label: "Bridesmaid"
+  },
+  "maid-of-honour": {
+    cls: "FIRST CLASS", flight: "FI 0001", to: "MOH", toName: "Maid of Honour",
+    ask: "Will you be my maid of honour?", seat: "Right beside me", boarding: "First", label: "Maid of Honour"
+  }
+};
+
+(function () {
+  const $ = id => document.getElementById(id);
+  const input = $("nameInput"), list = $("nameList"), msg = $("nameMsg"), proceed = $("proceed");
+  const norm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  let chosen = null, options = [], active = -1, currentPoster = null;
+
+  function render(matches, q) {
+    list.innerHTML = ""; options = matches; active = -1;
+    if (!q) { close(); return; }
+    if (!matches.length) {
+      const li = document.createElement("li"); li.className = "empty"; li.setAttribute("role", "option"); li.setAttribute("aria-disabled", "true");
+      li.textContent = "No passenger found by that name. Check the spelling, or reach out to Funbi.";
+      list.appendChild(li);
+    }
+    matches.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.id = "opt" + i; li.setAttribute("role", "option"); li.setAttribute("aria-selected", "false");
+      li.textContent = p.name;
+      const tag = document.createElement("small"); tag.textContent = ROLES[p.role].label.toUpperCase(); li.appendChild(tag);
+      li.addEventListener("mousedown", e => { e.preventDefault(); pick(p); });
+      list.appendChild(li);
+    });
+    list.hidden = false; input.setAttribute("aria-expanded", "true");
+  }
+  function close() { list.hidden = true; input.setAttribute("aria-expanded", "false"); input.removeAttribute("aria-activedescendant"); }
+  function setActive(i) {
+    [...list.querySelectorAll('[role="option"]:not(.empty)')].forEach((li, j) => li.setAttribute("aria-selected", j === i ? "true" : "false"));
+    active = i;
+    if (i >= 0) { input.setAttribute("aria-activedescendant", "opt" + i); $("opt" + i).scrollIntoView({ block: "nearest" }); }
+  }
+  function pick(p) {
+    chosen = p; input.value = p.name; close();
+    proceed.disabled = false; msg.textContent = ""; input.removeAttribute("aria-invalid");
+  }
+
+  input.addEventListener("input", () => {
+    chosen = null; proceed.disabled = true; msg.textContent = "";
+    const q = norm(input.value);
+    if (q.length < 2) { close(); list.innerHTML = ""; return; }
+    const words = q.split(" ");
+    const matches = PASSENGERS.filter(p => { const n = norm(p.name); return words.every(w => n.includes(w)); });
+    render(matches, q);
+    const exact = matches.find(p => norm(p.name) === q);
+    if (exact && matches.length === 1) { chosen = exact; proceed.disabled = false; }
+  });
+  input.addEventListener("keydown", e => {
+    if (list.hidden || !options.length) { if (e.key === "Enter" && chosen) go(); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive(Math.min(active + 1, options.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); if (active >= 0) pick(options[active]); else if (options.length === 1) pick(options[0]); }
+    else if (e.key === "Escape") close();
+  });
+  input.addEventListener("blur", () => setTimeout(close, 120));
+  proceed.addEventListener("click", go);
+
+  function buildPoster(p) {
+    const r = ROLES[p.role];
+    const node = $("passTpl").content.firstElementChild.cloneNode(true);
+    if (p.role === "maid-of-honour") node.classList.add("moh");
+    const fields = { name: p.name, cls: r.cls, flight: r.flight, to: r.to, toName: r.toName, ask: r.ask, seat: r.seat, boarding: r.boarding,
+      reply: "REPLY BY " + REPLY_BY, foot: "BFF TO " + r.to + " / " + r.flight };
+    node.querySelectorAll("[data-f]").forEach(el => { el.textContent = fields[el.dataset.f]; });
+    return node;
+  }
+  function fitText(node) {
+    // Shrink long names and the question so they always fit on one line
+    [[".pname", 46, 22], [".ask", 66, 40]].forEach(([sel, max, min]) => {
+      const el = node.querySelector(sel); let size = max; el.style.fontSize = size + "px";
+      const box = sel === ".pname" ? el.parentElement : el;
+      while (size > min && el.scrollWidth > box.clientWidth + 1) { size -= 1; el.style.fontSize = size + "px"; }
+    });
+  }
+  function scaleInto(viewport, poster) {
+    const s = viewport.clientWidth / 1080; poster.style.transform = "scale(" + s + ")";
+  }
+
+  // ---------- Passport data page ----------
+  function passportData(p) {
+    const parts = p.name.trim().split(/\s+/);
+    const surname = parts.length > 1 ? parts[parts.length - 1] : "";
+    const given = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+    const moh = p.role === "maid-of-honour";
+    const idx = PASSENGERS.indexOf(p) + 1;
+    const num = (moh ? "MOH " : "BRD ") + String(idx).padStart(4, "0");
+    const clean = t => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "<");
+    const l1 = ("P<FNI" + clean(surname) + "<<" + clean(given)).padEnd(44, "<").slice(0, 44);
+    const l2 = (num.replace(" ", "") + "<0FNI2804011F2804290<<<<<<<<<<<<<<<04").padEnd(44, "<").slice(0, 44);
+    return {
+      num, surname: surname || "\u2014", given, role: moh ? "Maid of Honour" : "Bridesmaid", roleCaps: moh ? "MAID OF HONOUR" : "BRIDESMAID",
+      stampText: (moh ? "FIRST CLASS" : "APPROVED") + " \u2726 BRIDAL PARTY \u2726 2028 \u2726",
+      mrz: l1 + "\n" + l2, first: parts[0]
+    };
+  }
+  function buildPassportPage(p) {
+    const d = passportData(p);
+    const node = $("dpTpl").content.firstElementChild.cloneNode(true);
+    node.querySelectorAll("[data-d]").forEach(el => { if (el.dataset.d !== "welcome") el.textContent = d[el.dataset.d]; });
+    const stampSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="240" height="240"><defs><path id="a" d="M 5 20 A 15 15 0 1 1 35 20 A 15 15 0 1 1 5 20"/></defs>'
+      + '<circle cx="20" cy="20" r="18.5" fill="none" stroke="#5C7A5E" stroke-width=".7"/><circle cx="20" cy="20" r="11" fill="none" stroke="#5C7A5E" stroke-width=".45"/>'
+      + '<text font-family="Courier New, monospace" font-weight="700" font-size="3.1" fill="#5C7A5E" letter-spacing=".35"><textPath href="#a">' + d.stampText + '</textPath></text>'
+      + '<path transform="translate(20 20) rotate(-20) scale(.7)" d="M-10 1.5 L10 -3.5 L8.5 -6 L1 -3.5 L-5 -8.5 L-7 -8 L-3 -2 L-7.5 -0.5 L-9.5 -2 L-11 -1.5 Z" fill="#5C7A5E"/></svg>';
+    node.querySelector("[data-stamp]").src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(stampSvg);
+    const w = node.querySelector('[data-d="welcome"]');
+    w.textContent = "Dear " + d.first + ", this passport is your ticket to every moment of our journey.";
+    const sig = document.createElement("b"); sig.textContent = "Love, Funbi"; w.appendChild(sig);
+    // shrink long names to fit
+    node.querySelectorAll(".v.big").forEach(el => { el.style.whiteSpace = "nowrap"; });
+    return node;
+  }
+  function fitPassport(node) {
+    node.querySelectorAll(".v.big").forEach(el => {
+      let size = 16; const box = node.querySelector(".data");
+      while (size > 10 && el.scrollWidth > box.clientWidth) { size -= .5; el.style.fontSize = size + "px"; }
+    });
+  }
+  function scalePassport() {
+    const wrap = $("pageWrap"), dp = wrap.firstElementChild;
+    if (dp) dp.style.transform = "scale(" + (wrap.clientWidth / 352) + ")";
+  }
+
+  async function go() {
+    if (!chosen) return;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    $("checkin").hidden = true; $("printing").hidden = false;
+    await (document.fonts ? document.fonts.ready : Promise.resolve());
+    await new Promise(r => setTimeout(r, reduce ? 200 : 1700));
+    currentPoster = chosen;
+    const wrap = $("pageWrap"); wrap.innerHTML = "";
+    const dp = buildPassportPage(chosen); wrap.appendChild(dp);
+    const cover = $("coverBtn"); cover.hidden = false; cover.style.animation = ""; cover.getAnimations().forEach(a => a.cancel());
+    $("tapHint").hidden = false; $("passArea").hidden = true;
+    $("printing").hidden = true; $("result").hidden = false;
+    fitPassport(dp); scalePassport();
+    $("book").classList.remove("arrive"); void $("book").offsetWidth; $("book").classList.add("arrive");
+    $("hello").textContent = "Welcome, " + first(chosen.name) + ". Your passport has been issued.";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  $("coverBtn").addEventListener("click", async () => {
+    const cover = $("coverBtn"), reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (cover.dataset.busy) return; cover.dataset.busy = "1";
+    cover.style.animation = "none"; $("tapHint").hidden = true;
+    if (!reduce) await cover.animate([{ transform: "rotateY(0deg)" }, { transform: "rotateY(-178deg)" }], { duration: 1100, easing: "cubic-bezier(.45,.05,.25,1)", fill: "forwards" }).finished;
+    cover.hidden = true; delete cover.dataset.busy;
+    const stamp = $("pageWrap").querySelector(".stamp");
+    stamp.classList.add("on");
+    if (!reduce) await stamp.animate([{ transform: "rotate(-14deg) scale(2.2)", opacity: 0 }, { transform: "rotate(-14deg) scale(.94)", opacity: .95, offset: .7 }, { transform: "rotate(-14deg) scale(1)", opacity: .92 }], { duration: 450, easing: "ease-in" }).finished;
+    await new Promise(r => setTimeout(r, reduce ? 0 : 700));
+    // Now the boarding pass slides out
+    const vp = $("viewport"); vp.innerHTML = "";
+    const poster = buildPoster(currentPoster); vp.appendChild(poster);
+    $("passArea").hidden = false; fitText(poster); scaleInto(vp, poster);
+    vp.classList.remove("arrive"); void vp.offsetWidth; vp.classList.add("arrive");
+    $("hello").textContent = currentPoster.role === "maid-of-honour" ? "Welcome aboard, " + first(currentPoster.name) + ". You are flying first class." : "Welcome aboard, " + first(currentPoster.name) + ".";
+    setTimeout(() => $("passArea").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }), 250);
+  });
+
+  const first = n => n.trim().split(/\s+/)[0];
+  addEventListener("resize", () => { const p = $("viewport").firstElementChild; if (p) scaleInto($("viewport"), p); scalePassport(); });
+
+  $("restart").addEventListener("click", () => {
+    $("result").hidden = true; $("passArea").hidden = true; $("checkin").hidden = false; input.value = ""; chosen = null; proceed.disabled = true; input.focus();
+  });
+
+  // Save the pass at full size
+  async function capture() {
+    if (!window.html2canvas) throw new Error("capture unavailable");
+    const host = document.createElement("div"); host.className = "capture-host";
+    const poster = buildPoster(currentPoster); host.appendChild(poster); document.body.appendChild(host);
+    fitText(poster);
+    try { return await html2canvas(poster, { scale: 2, backgroundColor: null, useCORS: true, logging: false, width: 1080, height: 1350, windowWidth: 1080 }); }
+    finally { host.remove(); }
+  }
+  async function capturePassport() {
+    const host = document.createElement("div"); host.className = "capture-host";
+    const dp = buildPassportPage(currentPoster); dp.querySelector(".stamp").classList.add("on");
+    host.appendChild(dp); document.body.appendChild(host); fitPassport(dp);
+    try { return await html2canvas(dp, { scale: 3, backgroundColor: "#F7F2E7", logging: false, width: 352, height: 500, windowWidth: 352 }); }
+    finally { host.remove(); }
+  }
+  const fileBase = () => "Boarding-Pass-" + currentPoster.name.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
+  async function withBusy(btn, fn) {
+    const label = btn.textContent; btn.disabled = true; btn.textContent = "PREPARING";
+    try { await fn(); } catch (e) { alert("Sorry, the download did not work on this device. Please take a screenshot of your pass instead."); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  }
+  function save(blobOrUrl, name) {
+    const a = document.createElement("a"); a.download = name;
+    a.href = typeof blobOrUrl === "string" ? blobOrUrl : URL.createObjectURL(blobOrUrl);
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  $("dlPng").addEventListener("click", e => withBusy(e.currentTarget, async () => {
+    const canvas = await capture();
+    const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+    save(blob, fileBase() + ".png");
+  }));
+  $("dlPdf").addEventListener("click", e => withBusy(e.currentTarget, async () => {
+    const canvas = await capture();
+    const pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "px", format: [1080, 1350], hotfixes: ["px_scaling"] });
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 1080, 1350);
+    const pp = await capturePassport();
+    pdf.addPage([1056, 1500], "portrait");
+    pdf.addImage(pp.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 1056, 1500);
+    pdf.save(fileBase() + ".pdf");
+  }));
+})();
+</script>
+</body>
+</html>
