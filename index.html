@@ -643,13 +643,16 @@
   .party { padding: var(--section) var(--gutter); background: var(--paper); text-align: center; }
   .party .label { color: var(--sage); margin-bottom: 1.1rem; }
   .party h2 { font-family: var(--display); font-weight: 300; font-size: clamp(2.6rem, 5vw, 4.8rem); letter-spacing: -.02em; margin: 0; }
-  .moh { margin: clamp(48px, 6vw, 72px) auto 0; }
+  .honours { display: flex; flex-wrap: wrap; justify-content: center; gap: 2.5rem clamp(64px, 10vw, 160px); margin: clamp(48px, 6vw, 72px) auto 0; }
+  .moh { margin: 0; }
   .moh .role { color: var(--gold-deep); }
   .moh .nm { font-family: var(--display); font-weight: 300; font-style: italic; font-size: clamp(2rem, 3.6vw, 3.2rem); line-height: 1.1; margin: .7rem 0 0; color: var(--ink); }
   .rule { width: 120px; height: 1px; background: var(--gold); margin: clamp(40px, 5vw, 56px) auto; border: 0; }
   .maids { list-style: none; margin: 0 auto; padding: 0; max-width: 1040px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 3rem; text-align: left; counter-reset: m; }
   .maids li { counter-increment: m; display: flex; align-items: baseline; gap: 1rem; padding: 1.05rem 0; border-bottom: 1px solid rgba(184,151,90,.35); font-family: var(--display); font-weight: 300; font-size: 1.3rem; color: var(--ink); }
   .maids li::before { content: counter(m, decimal-leading-zero); font-family: var(--body); font-size: .68rem; letter-spacing: .12em; color: var(--gold-deep); min-width: 1.4rem; }
+  .party .party-sub { margin: clamp(56px, 6vw, 80px) 0 1.6rem; color: var(--gold-deep); }
+  .party .party-sub.first { margin-top: 0; }
   .party .label.after { margin: 2.5rem 0 0; color: var(--ink-soft); }
   @media (max-width: 860px) { .maids { grid-template-columns: repeat(2, 1fr); gap: 0 1.75rem; } }
   @media (max-width: 520px) { .maids { grid-template-columns: 1fr; } .maids li { font-size: 1.2rem; } }
@@ -821,9 +824,15 @@
 <section class="party" id="party">
   <p class="label rv">With us at the altar</p>
   <h2 class="rv">The Bridal Party</h2>
-  <div class="moh rv" id="moh"></div>
+  <div class="honours rv">
+    <div class="moh" id="moh"></div>
+    <div class="moh" id="bestman"></div>
+  </div>
   <hr class="rule">
+  <p class="label rv party-sub first">The bridesmaids</p>
   <ol class="maids rv" id="maids"></ol>
+  <p class="label rv party-sub">The groomsmen</p>
+  <ol class="maids rv" id="grooms"></ol>
 </section>
 <section id="explore" class="explore">
   <div class="wide">
@@ -1580,6 +1589,11 @@ const WEDDING = {
       "Favour Aibangbee", "Given Brown", "Sarah Brown", "Anna Addison",
       "Dami Adekanle", "Tomi Olabosinde", "Deborah Osime", "Adeola Ogunderu",
       "Teni Olasanya", "Enedu David-Maji", "Fisayo Ojo", "Fola Ojo"
+    ],
+    bestMan: "Samuel Abioye",
+    groomsmen: [
+      "Dada Rhaman", "Emmanuel Ikenebomeh", "John Ige",
+      "Tosin Olabosinde", "Daniel Vierra"
     ]
   };
   /* Which proposal photo (0 to 6, in gallery order) fills the hero */
@@ -1607,8 +1621,13 @@ const WEDDING = {
   const moh = document.getElementById("moh");
   moh.innerHTML = '<p class="label role">Maid of honour</p><p class="nm"></p>';
   moh.querySelector(".nm").textContent = BRIDAL_PARTY.maidOfHonour;
+  const bm = document.getElementById("bestman");
+  bm.innerHTML = '<p class="label role">Best man</p><p class="nm"></p>';
+  bm.querySelector(".nm").textContent = BRIDAL_PARTY.bestMan;
   const maids = document.getElementById("maids");
   BRIDAL_PARTY.bridesmaids.forEach(n => { const li = document.createElement("li"); li.textContent = n; maids.appendChild(li); });
+  const grooms = document.getElementById("grooms");
+  BRIDAL_PARTY.groomsmen.forEach(n => { const li = document.createElement("li"); li.textContent = n; grooms.appendChild(li); });
 
   // Nav turns solid after the hero
   const nav = document.getElementById("topNav");
