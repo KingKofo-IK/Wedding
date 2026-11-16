@@ -892,7 +892,10 @@ const ROLES = {
   .fl[hidden] { display: none; }
   .fl-scene { position: absolute; inset: 0; opacity: 0; }
   .fl-skip { position: absolute; z-index: 5; top: calc(18px + env(safe-area-inset-top, 0px)); right: 18px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(212,188,140,.5); background: rgba(14,20,17,.4); color: #D4BC8C; font: 500 .7rem "IBM Plex Mono", monospace; letter-spacing: .2em; text-transform: uppercase; cursor: pointer; }
-  .fl-skip:hover { background: rgba(212,188,140,.15); }
+  .fl-skip:hover, .fl-mute:hover { background: rgba(212,188,140,.15); }
+  .fl-mute { position: absolute; z-index: 5; top: calc(18px + env(safe-area-inset-top, 0px)); right: 118px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(212,188,140,.5); background: rgba(14,20,17,.4); color: #D4BC8C; display: grid; place-items: center; cursor: pointer; padding: 0; }
+  .fl-mute svg { width: 18px; height: 18px; }
+  .fl-mute .off { display: none; } .fl-mute[aria-pressed="true"] .on { display: none; } .fl-mute[aria-pressed="true"] .off { display: block; }
   .fl-letterbox::before, .fl-letterbox::after { content: ""; position: absolute; left: 0; right: 0; height: 7vh; background: #000; z-index: 4; }
   .fl-letterbox::before { top: 0; } .fl-letterbox::after { bottom: 0; }
 
@@ -936,6 +939,10 @@ const ROLES = {
 </style>
 
 <div class="fl fl-letterbox" id="flight" hidden aria-live="polite">
+  <button class="fl-mute" id="flMute" type="button" aria-label="Mute sound" aria-pressed="false">
+    <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+    <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+  </button>
   <button class="fl-skip" id="flSkip" type="button">Skip &rsaquo;</button>
 
   <section class="fl-scene s1" aria-label="Taking off from Atlanta">
@@ -1006,6 +1013,105 @@ const ROLES = {
 (function () {
   const $ = id => document.getElementById(id);
   const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  /* ---------- Sound: synthesised in the browser, no audio files ---------- */
+  const SFX = (() => {
+    let ctx = null, master = null, muted = false;
+    try { muted = localStorage.getItem("fiMuted") === "1"; } catch (e) {}
+    const unlock = () => {
+      try {
+        if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : .9; master.connect(ctx.destination); }
+        if (ctx.state === "suspended") ctx.resume();
+      } catch (e) {}
+    };
+    // phones only allow sound after a tap, so get ready on the first one
+    ["pointerdown", "touchend", "click", "keydown"].forEach(ev => addEventListener(ev, unlock, { capture: true, passive: true }));
+    const noise = (sec, brown) => {
+      const len = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; if (brown) { last = (last + .02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+      const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; return src;
+    };
+    let nodes = [], bus = null;
+    const keep = n => (nodes.push(n), n);
+    const env = (g, t, pts) => { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); pts.forEach(([dt, v, lin]) => lin ? g.gain.linearRampToValueAtTime(v, t + dt) : g.gain.setTargetAtTime(v, t + dt[0], dt[1])); };
+    const chime = (when, notes, vol = .22) => {
+      notes.forEach(([f, dt]) => {
+        [1, 2.01, 3].forEach((h, k) => {
+          const o = keep(ctx.createOscillator()), g = ctx.createGain(), t = when + dt;
+          o.type = "sine"; o.frequency.value = f * h;
+          g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol / (k * 2 + 1), t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + 2.4 - k * .6);
+          o.connect(g); g.connect(bus); o.start(t); o.stop(t + 2.6);
+        });
+      });
+    };
+    return {
+      get ready() { return !!ctx; },
+      get muted() { return muted; },
+      setMuted(m) { muted = m; try { localStorage.setItem("fiMuted", m ? "1" : "0"); } catch (e) {} if (master) master.gain.setTargetAtTime(m ? 0 : .9, ctx.currentTime, .05); },
+      takeoff() {
+        unlock(); if (!ctx) return;
+        const t = ctx.currentTime + .05;
+        bus = ctx.createGain(); bus.gain.value = 1; bus.connect(master);
+        chime(t, [[659.25, 0], [523.25, .55]], .2);                         // cabin chime
+        // engine roar: brown noise through an opening low-pass filter
+        const roar = keep(noise(3, true)), lp = ctx.createBiquadFilter(), rg = ctx.createGain();
+        lp.type = "lowpass"; lp.frequency.setValueAtTime(220, t); lp.frequency.exponentialRampToValueAtTime(1400, t + 2.6); lp.frequency.exponentialRampToValueAtTime(500, t + 4.2);
+        rg.gain.setValueAtTime(0, t); rg.gain.linearRampToValueAtTime(.35, t + .9); rg.gain.linearRampToValueAtTime(.75, t + 2.4); rg.gain.linearRampToValueAtTime(.4, t + 3.4); rg.gain.linearRampToValueAtTime(0, t + 4.4);
+        roar.connect(lp); lp.connect(rg); rg.connect(bus); roar.start(t); roar.stop(t + 4.6);
+        // turbine whine spooling up, then dopplering away
+        const wh = keep(ctx.createOscillator()), bp = ctx.createBiquadFilter(), wg = ctx.createGain();
+        wh.type = "sawtooth"; wh.frequency.setValueAtTime(180, t); wh.frequency.exponentialRampToValueAtTime(720, t + 2.2); wh.frequency.exponentialRampToValueAtTime(520, t + 4.2);
+        bp.type = "bandpass"; bp.frequency.value = 900; bp.Q.value = 4;
+        wg.gain.setValueAtTime(0, t); wg.gain.linearRampToValueAtTime(.05, t + 1.2); wg.gain.linearRampToValueAtTime(.07, t + 2.4); wg.gain.linearRampToValueAtTime(0, t + 4.2);
+        wh.connect(bp); bp.connect(wg); wg.connect(bus); wh.start(t); wh.stop(t + 4.4);
+        // runway rumble until the wheels leave the ground
+        const ru = keep(ctx.createOscillator()), trem = keep(ctx.createOscillator()), tg = ctx.createGain(), ug = ctx.createGain();
+        ru.type = "sine"; ru.frequency.value = 48; trem.frequency.value = 11; tg.gain.value = .12;
+        ug.gain.setValueAtTime(0, t); ug.gain.linearRampToValueAtTime(.28, t + .8); ug.gain.linearRampToValueAtTime(.3, t + 2); ug.gain.linearRampToValueAtTime(0, t + 2.5);
+        trem.connect(tg); tg.connect(ug.gain); ru.connect(ug); ug.connect(bus); ru.start(t); trem.start(t); ru.stop(t + 2.6); trem.stop(t + 2.6);
+      },
+      cruise() {
+        if (!ctx || !bus) return;
+        const t = ctx.currentTime + .05;
+        // wind over the wings
+        const w = keep(noise(4, false)), bp = ctx.createBiquadFilter(), g = ctx.createGain(), lfo = keep(ctx.createOscillator()), lg = ctx.createGain();
+        bp.type = "bandpass"; bp.frequency.value = 600; bp.Q.value = .7; lfo.frequency.value = .25; lg.gain.value = 250;
+        lfo.connect(lg); lg.connect(bp.frequency);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.06, t + 1.2); g.gain.linearRampToValueAtTime(.05, t + 3.6); g.gain.linearRampToValueAtTime(0, t + 4.6);
+        w.connect(bp); bp.connect(g); g.connect(bus); w.start(t); lfo.start(t); w.stop(t + 4.8); lfo.stop(t + 4.8);
+        // warm pad: F major 9, slow swell
+        [174.61, 220, 261.63, 329.63, 392].forEach((f, i) => {
+          const o = keep(ctx.createOscillator()), og = ctx.createGain(), lp = ctx.createBiquadFilter();
+          o.type = i % 2 ? "triangle" : "sine"; o.frequency.value = f; o.detune.value = (i - 2) * 4;
+          lp.type = "lowpass"; lp.frequency.value = 1800;
+          og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(.045, t + 2); og.gain.linearRampToValueAtTime(.04, t + 4); og.gain.linearRampToValueAtTime(0, t + 5.2);
+          o.connect(lp); lp.connect(og); og.connect(bus); o.start(t); o.stop(t + 5.4);
+        });
+        // a gentle sparkle as the path reaches Lagos
+        chime(t + 3.3, [[783.99, 0], [987.77, .14], [1174.66, .28]], .07);
+      },
+      arrive() {
+        if (!ctx || !bus) return;
+        const t = ctx.currentTime + .05;
+        chime(t, [[523.25, 0], [659.25, .5], [783.99, 1]], .18);              // arrival chime, rising
+        [130.81, 196, 261.63, 329.63].forEach(f => {                          // resolving C major pad
+          const o = keep(ctx.createOscillator()), g = ctx.createGain();
+          o.type = "sine"; o.frequency.value = f;
+          g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.05, t + 1); g.gain.linearRampToValueAtTime(0, t + 3.4);
+          o.connect(g); g.connect(bus); o.start(t); o.stop(t + 3.6);
+        });
+      },
+      stop(fast) {
+        if (!ctx || !bus) return;
+        const b = bus, t = ctx.currentTime; bus = null;
+        b.gain.setTargetAtTime(0, t, fast ? .08 : .25);
+        const ns = nodes; nodes = [];
+        setTimeout(() => { ns.forEach(n => { try { n.stop(); } catch (e) {} }); try { b.disconnect(); } catch (e) {} }, fast ? 600 : 1500);
+      }
+    };
+  })();
+
   window.playFlight = function (p) {
     const fl = $("flight");
     if (!fl || matchMedia("(prefers-reduced-motion: reduce)").matches) return Promise.resolve();
@@ -1021,6 +1127,7 @@ const ROLES = {
     return new Promise(async done => {
       const finish = async () => {
         if (fl.dataset.ending) return; fl.dataset.ending = "1";
+        SFX.stop();
         cancelAnimationFrame(raf);
         await fl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: "ease-in", fill: "forwards" }).finished;
         anims.forEach(a => a.cancel()); fl.hidden = true; delete fl.dataset.ending;
@@ -1028,7 +1135,9 @@ const ROLES = {
         document.documentElement.style.overflow = "";
         done();
       };
-      $("flSkip").onclick = () => { skipped = true; finish(); };
+      $("flSkip").onclick = () => { skipped = true; SFX.stop(true); finish(); };
+      const mb = $("flMute"); mb.setAttribute("aria-pressed", SFX.muted ? "true" : "false"); mb.setAttribute("aria-label", SFX.muted ? "Turn sound on" : "Mute sound");
+      mb.onclick = () => { const m = !SFX.muted; SFX.setMuted(m); mb.setAttribute("aria-pressed", m ? "true" : "false"); mb.setAttribute("aria-label", m ? "Turn sound on" : "Mute sound"); };
       document.documentElement.style.overflow = "hidden";
       fl.hidden = false;
       A(fl, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: "ease-out" });
@@ -1036,6 +1145,7 @@ const ROLES = {
 
       // Scene 1: roll down the runway, rotate, lift off
       s1.style.opacity = 1;
+      SFX.takeoff();
       const plane = $("flPlane");
       A(plane, [
         { transform: "translate(-50%,-50%) translateX(-34vw) scale(.8) rotate(0deg)", offset: 0 },
@@ -1049,6 +1159,7 @@ const ROLES = {
       await wait(3500); if (skipped) return;
 
       // Scene 2: the crossing
+      SFX.cruise();
       A(s1, [{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: "ease-in" });
       A(s2, [{ opacity: 0 }, { opacity: 1 }], { duration: 900, easing: "ease-out" });
       s2.querySelectorAll(".fl-cloud").forEach((c, i) => A(c, [{ transform: "translateX(0)" }, { transform: `translateX(${i ? -18 : -30}%)` }], { duration: 4800, easing: "linear" }));
@@ -1074,6 +1185,7 @@ const ROLES = {
       cancelAnimationFrame(raf);
 
       // Scene 3: arrival
+      SFX.arrive();
       A(s2, [{ opacity: 1 }, { opacity: 0 }], { duration: 800, easing: "ease-in" });
       A(s3, [{ opacity: 0 }, { opacity: 1 }], { duration: 1000, easing: "ease-out" });
       A(s3.querySelector("h2"), [{ opacity: 0, transform: "translateY(24px)", filter: "blur(6px)" }, { opacity: 1, transform: "none", filter: "blur(0)" }], { duration: 1600, delay: 300, easing: "cubic-bezier(.2,.7,.2,1)" });
