@@ -778,7 +778,8 @@ const ROLES = {
 <!-- ASK:START (the question before the passport) -->
 <style>
   html, body { overflow-x: hidden; }
-  .cx-grain { inset: 0 !important; width: 100%; height: 100%; background-size: 200px 200px; }
+  .cx-grain { inset: 0 !important; width: 100%; height: 100%; background-size: 200px 200px; animation-name: cxGrainBg !important; transform: none !important; }
+  @keyframes cxGrainBg { 0%{background-position:0 0} 20%{background-position:-37px 23px} 40%{background-position:29px -41px} 60%{background-position:-19px -13px} 80%{background-position:43px 31px} 100%{background-position:0 0} }
   .ask-ov { position: fixed; inset: 0; z-index: 9400; display: grid; place-items: center; padding: 20px; background: radial-gradient(ellipse at 50% 40%, rgba(52,71,58,.92), rgba(14,20,17,.97)); }
   .ask-ov[hidden] { display: none; }
   .ask-card { position: relative; width: min(100%, 460px); min-height: 470px; padding: 2.4rem 1.6rem 2rem; border-radius: 22px; background: var(--cream, #F8F5EF); color: var(--ink, #26302A); text-align: center; box-shadow: 0 40px 80px -30px rgba(0,0,0,.7), 0 0 0 1px rgba(184,151,90,.4) inset; overflow: hidden; }
