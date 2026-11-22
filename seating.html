@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seating Chart: F&amp;I Airways</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0E1411">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0E1411; --panel: #141C17; --flap: #1B241E; --flap2: #10170F; --cream: #F8F5EF; --gold: #B8975A; --amber: #F4CE8C; --sage: #8FA690; --mono: "IBM Plex Mono", ui-monospace, monospace; --serif: "Fraunces", Georgia, serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--cream); font-family: var(--mono); overflow-x: hidden; }
+  body { background: radial-gradient(ellipse at 50% 0%, #26332B 0%, var(--bg) 60%) fixed; }
+  .wrap { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; padding: clamp(16px, 3vw, 44px) clamp(14px, 3.5vw, 56px) clamp(14px, 2vw, 28px); gap: clamp(12px, 2vh, 24px); }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: .8rem; }
+  .brand svg { width: clamp(28px, 3vw, 44px); height: auto; }
+  .brand b { font: 300 clamp(1.6rem, 3.2vw, 3rem)/1 var(--serif); color: var(--amber); letter-spacing: .01em; }
+  .sub { margin: .5rem 0 0; font-size: clamp(.62rem, .9vw, .9rem); letter-spacing: .3em; color: var(--sage); }
+  .title { text-align: right; }
+  .title h1 { margin: 0; font: 300 clamp(1.8rem, 3.6vw, 3.4rem)/1 var(--serif); }
+  .title h1 em { color: var(--amber); }
+  .clock { margin: .5rem 0 0; font-size: clamp(.7rem, 1vw, 1rem); letter-spacing: .2em; color: var(--sage); font-variant-numeric: tabular-nums; }
+
+  .board { flex: 1; display: flex; flex-direction: column; background: var(--panel); border: 1px solid rgba(212,188,140,.22); border-radius: 14px; padding: clamp(8px, 1.2vw, 18px); box-shadow: inset 0 0 60px rgba(0,0,0,.5); }
+  .row, .head { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) 1.6em minmax(0, 1fr) 7.5em; align-items: center; gap: clamp(6px, 1vw, 16px); padding: 0 clamp(4px, .8vw, 12px); }
+  .head { font-size: clamp(.55rem, .85vw, .85rem); letter-spacing: .26em; color: var(--sage); padding-bottom: .7em; border-bottom: 1px solid rgba(212,188,140,.18); margin-bottom: .4em; }
+  .row { flex: 1; min-height: 0; border-bottom: 1px solid rgba(248,245,239,.05); font-size: min(2.05vw, 3.6vh); transition: background .6s; border-radius: 8px; }
+  .row:last-child { border-bottom: 0; }
+  .row.lit { background: rgba(244,206,140,.07); box-shadow: inset 3px 0 0 var(--gold); }
+  .row.first .rn { color: var(--amber); }
+  .rn { font-weight: 600; letter-spacing: .08em; color: var(--cream); white-space: nowrap; }
+  .rn small { display: block; font-size: .42em; font-weight: 500; letter-spacing: .24em; color: var(--sage); margin-top: .2em; }
+  .amp { text-align: center; font: italic 300 1.5em/1 var(--serif); color: rgba(212,188,140,.25); transition: color .6s; }
+  .row.done .amp { color: var(--amber); }
+
+  .flaps { display: flex; gap: .14em; }
+  .cell { position: relative; width: 1.05em; height: 1.5em; flex: none; border-radius: .14em; background: linear-gradient(180deg, var(--flap) 0 49%, #0A0F0C 49% 51%, var(--flap2) 51%); box-shadow: 0 .06em .12em rgba(0,0,0,.6); display: grid; place-items: center; font-weight: 600; color: var(--cream); overflow: hidden; }
+  .cell span { position: relative; z-index: 1; line-height: 1; }
+  .cell.flip span { animation: flip .07s linear; }
+  @keyframes flip { 0% { transform: scaleY(1); } 50% { transform: scaleY(.1); } 100% { transform: scaleY(1); } }
+  .row.done .cell { color: var(--amber); }
+  .row > div:nth-child(2), .row > div:nth-child(4) { position: relative; }
+  .seat { position: absolute; left: 0; top: -1.5em; display: block; font-size: .32em; letter-spacing: .2em; color: var(--sage); }
+
+  .status { font-size: .5em; letter-spacing: .18em; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: .5em; color: var(--sage); }
+  .status i { width: .55em; height: .55em; border-radius: 50%; background: currentColor; flex: none; }
+  .status.wait i { animation: blink 1.2s steps(2) infinite; }
+  .status.now { color: var(--amber); } .status.now i { animation: blink .5s steps(2) infinite; box-shadow: 0 0 .6em var(--amber); }
+  .status.ok { color: var(--amber); } .status.ok i { box-shadow: 0 0 .6em var(--amber); }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .hint { margin: 0; font-size: clamp(.58rem, .8vw, .8rem); letter-spacing: .2em; color: rgba(248,245,239,.45); }
+  .ctrl { display: flex; gap: .6rem; flex-wrap: wrap; }
+  .btn { min-height: 44px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(212,188,140,.5); background: transparent; color: var(--amber); font: 500 clamp(.62rem, .8vw, .78rem) var(--mono); letter-spacing: .2em; text-transform: uppercase; cursor: pointer; }
+  .btn:hover { background: rgba(212,188,140,.12); }
+  .btn.main { background: var(--gold); border-color: var(--gold); color: #0E1411; }
+  .btn.main:hover { background: #D4BC8C; }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  .finale { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; opacity: 0; transition: opacity 1s; background: radial-gradient(ellipse at center, rgba(14,20,17,.75), rgba(14,20,17,.2) 70%); }
+  .finale.on { opacity: 1; }
+  .finale p { margin: 0 0 .8rem; font-size: clamp(.7rem, 1.1vw, 1rem); letter-spacing: .34em; color: var(--amber); }
+  .finale h2 { margin: 0; font: italic 300 clamp(2.4rem, 7vw, 6rem)/1 var(--serif); }
+  #confetti { position: fixed; inset: 0; pointer-events: none; }
+
+  @media (max-width: 700px) {
+    .row, .head { grid-template-columns: 2.6em minmax(0, 1fr) 1.2em minmax(0, 1fr); }
+    .row { font-size: 3.2vw; }
+    .head .hs, .status, .rn small, .seat, .rn .rw { display: none; }
+    .cell { width: .9em; height: 1.35em; }
+    .flaps { gap: .08em; }
+    .title { text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) { .cell.flip span, .status i { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brand">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13.5 L22 8 L20.5 5.5 L13 8 L7 3 L5 3.6 L9 9.5 L4.5 11 L2.5 9.5 L1 10 Z M5 16 H19" fill="none" stroke="#F4CE8C" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        <b>F&amp;I Airways</b>
+      </div>
+      <p class="sub">FLIGHT FI 2028 · ATL &rarr; LOS · MARCH 30 &amp; APRIL 1, 2028</p>
+    </div>
+    <div class="title">
+      <h1>Seating <em>chart</em></h1>
+      <p class="clock" id="clock">LOCAL TIME --:--</p>
+    </div>
+  </header>
+
+  <main class="board" aria-label="Seating chart">
+    <div class="head" aria-hidden="true"><span>ROW</span><span>SEAT A</span><span></span><span>SEAT B</span><span class="hs">STATUS</span></div>
+    <div id="rows"></div>
+  </main>
+
+  <footer>
+    <p class="hint">SPACE OR &rarr; REVEALS THE NEXT ROW · A REVEALS ALL · M MUTES · F FULL SCREEN</p>
+    <div class="ctrl">
+      <button class="btn" id="muteBtn" type="button" aria-pressed="false">Sound on</button>
+      <button class="btn" id="fsBtn" type="button">Full screen</button>
+      <button class="btn" id="resetBtn" type="button">Reset</button>
+      <button class="btn main" id="nextBtn" type="button">Reveal next row</button>
+    </div>
+  </footer>
+</div>
+
+<div class="finale" id="finale" aria-live="polite"><div><p>ALL SEATS ASSIGNED · DOORS CLOSING</p><h2>Welcome aboard</h2></div></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script>
+/* ============================================================
+   EDIT HERE: the pairs, in row order (row 1 at the top).
+   Rows are revealed from the bottom up, so row 1 comes last.
+   ============================================================ */
+const PAIRS = [
+  ["Samuel", "Faith"],
+  ["John", "Deborah"],
+  ["Goke", "Adeola"],
+  ["Tosin", "Anna"],
+  ["Emmanuel", "Teni"],
+  ["Dada", "Enedu"],
+  ["Daniel", "Given"],
+  ["Dami", "Tomi"],
+  ["Fola", "Fisayo"],
+  ["Sarah", "Favour"]
+];
+const REVEAL_BOTTOM_UP = true;
+
+(function () {
+  const $ = id => document.getElementById(id);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const W = Math.max(...PAIRS.flat().map(n => n.length));
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const rowsEl = $("rows");
+  const rows = PAIRS.map((pair, i) => {
+    const r = document.createElement("div");
+    r.className = "row" + (i === 0 ? " first" : "");
+    const n = i + 1;
+    r.innerHTML = `<div class="rn"><span class="rw">ROW </span>${String(n).padStart(2, "0")}<small>${i === 0 ? "FIRST CLASS" : "BRIDAL CLASS"}</small></div>` +
+      `<div><span class="seat">${n}A</span><div class="flaps"></div></div><div class="amp">&amp;</div>` +
+      `<div><span class="seat">${n}B</span><div class="flaps"></div></div>` +
+      `<div class="status wait"><i></i><span>BOARDING SOON</span></div>`;
+    const [fa, fb] = r.querySelectorAll(".flaps");
+    [fa, fb].forEach(f => { for (let k = 0; k < W; k++) { const c = document.createElement("div"); c.className = "cell"; c.innerHTML = "<span></span>"; f.appendChild(c); } });
+    r.setAttribute("aria-label", `Row ${n}, not yet revealed`);
+    rowsEl.appendChild(r);
+    return { el: r, fa, fb, pair, n, done: false };
+  });
+  rowsEl.style.display = "contents";
+  const order = REVEAL_BOTTOM_UP ? [...rows].reverse() : rows;
+
+  // ---- Sound: soft mechanical clicks and a chime, made in the browser ----
+  let ctx = null, muted = false;
+  try { muted = localStorage.getItem("seatMuted") === "1"; } catch (e) {}
+  const ensure = () => { try { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === "suspended") ctx.resume(); } catch (e) {} };
+  const click = () => {
+    if (muted || !ctx) return;
+    const t = ctx.currentTime, len = Math.floor(ctx.sampleRate * .018), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = buf; f.type = "bandpass"; f.frequency.value = 2200 + Math.random() * 1600; f.Q.value = 1.2; g.gain.value = .22;
+    s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(t);
+  };
+  const chime = (notes, vol = .16) => {
+    if (muted || !ctx) return;
+    const t0 = ctx.currentTime + .02;
+    notes.forEach(([f, dt]) => [1, 2.01].forEach((h, k) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), t = t0 + dt;
+      o.frequency.value = f * h; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol / (k * 2 + 1), t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + 1.8);
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 2);
+    }));
+  };
+  const setMute = m => { muted = m; try { localStorage.setItem("seatMuted", m ? "1" : "0"); } catch (e) {} $("muteBtn").textContent = m ? "Sound off" : "Sound on"; $("muteBtn").setAttribute("aria-pressed", m ? "true" : "false"); };
+  setMute(muted);
+
+  // ---- Split-flap ----
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  let clickBudget = 0;
+  setInterval(() => { clickBudget = 6; }, 40);
+  function flapTo(flaps, word) {
+    const target = word.toUpperCase().padEnd(W, " ");
+    const cells = [...flaps.children];
+    return Promise.all(cells.map((c, i) => new Promise(res => {
+      const span = c.firstChild, goal = target[i];
+      if (reduce) { span.textContent = goal.trim(); return res(); }
+      let steps = goal === " " ? 3 + i : 8 + i * 2 + Math.floor(Math.random() * 5), k = 0;
+      const tick = () => {
+        k++;
+        const ch = k >= steps ? goal : CHARS[(CHARS.indexOf(span.textContent) + 1 + Math.floor(Math.random() * 3)) % CHARS.length] || "A";
+        span.textContent = ch === " " ? "" : ch;
+        c.classList.remove("flip"); void c.offsetWidth; c.classList.add("flip");
+        if (clickBudget-- > 0) click();
+        if (k >= steps) return res();
+        setTimeout(tick, 55);
+      };
+      setTimeout(tick, i * 30);
+    })));
+  }
+
+  let busy = false;
+  async function revealRow(r, fast) {
+    if (r.done) return;
+    r.done = true;
+    const st = r.el.querySelector(".status");
+    rows.forEach(x => x.el.classList.remove("lit"));
+    r.el.classList.add("lit");
+    st.className = "status now"; st.lastChild.textContent = "NOW BOARDING";
+    if (!fast) r.el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+    await flapTo(r.fa, r.pair[0]);
+    if (!fast) await wait(reduce ? 200 : 900);       // a beat of suspense before the seatmate
+    await flapTo(r.fb, r.pair[1]);
+    r.el.classList.add("done");
+    st.className = "status ok"; st.lastChild.textContent = "PAIRED";
+    r.el.setAttribute("aria-label", `Row ${r.n}: ${r.pair[0]} and ${r.pair[1]}`);
+    if (!fast) chime(r.n === 1 ? [[523.25, 0], [659.25, .18], [783.99, .36], [1046.5, .54]] : [[659.25, 0], [783.99, .16]]);
+  }
+  async function next() {
+    if (busy) return;
+    const r = order.find(x => !x.done);
+    if (!r) return;
+    ensure(); busy = true; $("nextBtn").disabled = true;
+    await revealRow(r);
+    busy = false;
+    const left = order.some(x => !x.done);
+    $("nextBtn").disabled = !left;
+    $("nextBtn").textContent = left ? (order.filter(x => !x.done).length === 1 ? "Reveal first class" : "Reveal next row") : "All seats assigned";
+    if (!left) finale();
+  }
+  async function all() {
+    if (busy) return; ensure(); busy = true; $("nextBtn").disabled = true;
+    await Promise.all(order.filter(x => !x.done).map((r, i) => wait(i * 250).then(() => revealRow(r, true))));
+    busy = false; $("nextBtn").textContent = "All seats assigned"; finale();
+  }
+  function reset() {
+    if (busy) return;
+    rows.forEach(r => {
+      r.done = false; r.el.classList.remove("done", "lit");
+      [...r.fa.children, ...r.fb.children].forEach(c => c.firstChild.textContent = "");
+      const st = r.el.querySelector(".status"); st.className = "status wait"; st.lastChild.textContent = "BOARDING SOON";
+      r.el.setAttribute("aria-label", `Row ${r.n}, not yet revealed`);
+    });
+    $("finale").classList.remove("on"); $("nextBtn").disabled = false; $("nextBtn").textContent = "Reveal next row";
+  }
+
+  // ---- Finale: confetti ----
+  function finale() {
+    chime([[523.25, 0], [659.25, .2], [783.99, .4], [1046.5, .6], [1318.5, .8]], .14);
+    $("finale").classList.add("on");
+    setTimeout(() => $("finale").classList.remove("on"), 6000);
+    if (reduce) return;
+    const cv = $("confetti"), c = cv.getContext("2d"), dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; cv.style.width = "100%"; cv.style.height = "100%"; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cols = ["#B8975A", "#D4BC8C", "#F4CE8C", "#8FA690", "#AECBDD", "#F8F5EF"];
+    const bits = Array.from({ length: 180 }, () => ({ x: Math.random() * innerWidth, y: -20 - Math.random() * innerHeight * .6, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, r: Math.random() * 6.28, vr: (Math.random() - .5) * .3, w: 6 + Math.random() * 6, h: 8 + Math.random() * 10, col: cols[Math.floor(Math.random() * cols.length)] }));
+    const t0 = performance.now();
+    (function draw(now) {
+      c.clearRect(0, 0, innerWidth, innerHeight);
+      bits.forEach(b => { b.x += b.vx; b.y += b.vy; b.r += b.vr; c.save(); c.translate(b.x, b.y); c.rotate(b.r); c.fillStyle = b.col; c.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); c.restore(); });
+      if (now - t0 < 7000) requestAnimationFrame(draw); else c.clearRect(0, 0, innerWidth, innerHeight);
+    })(t0);
+  }
+
+  // ---- Controls ----
+  $("nextBtn").onclick = next;
+  $("resetBtn").onclick = reset;
+  $("muteBtn").onclick = () => { ensure(); setMute(!muted); };
+  $("fsBtn").onclick = () => { const d = document; if (!d.fullscreenElement) d.documentElement.requestFullscreen?.(); else d.exitFullscreen?.(); };
+  addEventListener("keydown", e => {
+    if (e.target.closest("button") && (e.key === " " || e.key === "Enter")) return;
+    if (e.key === " " || e.key === "ArrowRight" || e.key === "PageDown" || e.key === "Enter") { e.preventDefault(); next(); }
+    else if (e.key === "a" || e.key === "A") all();
+    else if (e.key === "m" || e.key === "M") { ensure(); setMute(!muted); }
+    else if (e.key === "f" || e.key === "F") $("fsBtn").click();
+  });
+
+  // Clock in Atlanta time
+  const tickClock = () => { $("clock").textContent = "ATLANTA " + new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "America/New_York" }); };
+  tickClock(); setInterval(tickClock, 15000);
+})();
+</script>
+</body>
+</html>

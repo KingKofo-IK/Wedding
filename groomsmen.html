@@ -335,7 +335,7 @@
       <div class="grid">
         <div><span class="lbl">DESTINATIONS</span><b>Lagos, Nigeria</b></div>
         <div><span class="lbl">BOARDING</span><b data-f="boarding"></b></div>
-        <div><span class="lbl">GATE</span><b>Forever</b></div>
+        <div><span class="lbl" data-f="gateLbl"></span><b data-f="gate"></b></div>
         <div><span class="lbl">SEAT</span><b data-f="seat"></b></div>
       </div>
       
@@ -353,14 +353,15 @@
    PASSENGER LIST. Add each name exactly as it should print.
    role: "best-man" or "groomsman"
    ============================================================ */
+/* seat: each pair shares a row (1A sits with 1B). Seatmates are revealed on the night. */
 const PASSENGERS = [
-  { name: "Samuel Abioye", role: "best-man" },
-  { name: "Dada Rhaman", role: "groomsman" },
-  { name: "Emmanuel Ikenebomeh", role: "groomsman" },
-  { name: "John Ige", role: "groomsman" },
-  { name: "Tosin Olabosinde", role: "groomsman" },
-  { name: "Daniel Vierra", role: "groomsman" },
-  { name: "Adegoke Olawale", role: "groomsman" }
+  { name: "Samuel Abioye", role: "best-man", seat: "1A" },
+  { name: "Dada Rhaman", role: "groomsman", seat: "6A" },
+  { name: "Emmanuel Ikenebomeh", role: "groomsman", seat: "5A" },
+  { name: "John Ige", role: "groomsman", seat: "2A" },
+  { name: "Tosin Olabosinde", role: "groomsman", seat: "4A" },
+  { name: "Daniel Vierra", role: "groomsman", seat: "7A" },
+  { name: "Adegoke Olawale", role: "groomsman", seat: "3A" }
 ];
 const REPLY_BY = "";   // leave empty to hide the line; e.g. "JAN 15, 2027"   // e.g. "MAY 1, 2027"
 
@@ -435,8 +436,9 @@ const ROLES = {
     const r = ROLES[p.role];
     const node = $("passTpl").content.firstElementChild.cloneNode(true);
     if (p.role === "best-man") node.classList.add("moh");
-    const fields = { name: p.name, cls: r.cls, flight: r.flight, to: r.to, toName: r.toName, ask: r.ask, seat: r.seat, boarding: r.boarding,
-      reply: REPLY_BY ? "REPLY BY " + REPLY_BY : "", foot: "BFF TO " + r.to + " / " + r.flight };
+    const fields = { name: p.name, cls: r.cls, flight: r.flight, to: r.to, toName: r.toName, ask: r.ask, seat: p.seat || r.seat, boarding: r.boarding,
+      reply: REPLY_BY ? "REPLY BY " + REPLY_BY : "",
+      gateLbl: p.seat ? "YOUR SEATMATE" : "GATE", gate: p.seat ? "Find row " + parseInt(p.seat, 10) : "Forever", foot: "BFF TO " + r.to + " / " + r.flight };
     node.querySelectorAll("[data-f]").forEach(el => { el.textContent = fields[el.dataset.f]; });
     return node;
   }
