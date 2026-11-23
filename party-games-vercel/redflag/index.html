@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Red Flag, Green Flag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sage:#5C7A5E; --sage-deep:#3F5A42; --cream:#F8F5EF; --sky:#AECBDD;
+  --gold:#B8924A; --ink:#1E2620; --muted:#5E6B60; --card:#FFFFFF; --line:#E3DED3;
+  --red:#A3473B; --green:#4E7A50;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --cream:#18201A; --card:#222C24; --ink:#EEF0EA; --muted:#A9B5AA; --line:#34403A;
+    --sage:#86A889; --sage-deep:#A7C4A9; --gold:#D4B06A; --red:#E07F6E; --green:#86B888;
+  }
+}
+:root[data-theme="dark"]{
+  --cream:#18201A; --card:#222C24; --ink:#EEF0EA; --muted:#A9B5AA; --line:#34403A;
+  --sage:#86A889; --sage-deep:#A7C4A9; --gold:#D4B06A; --red:#E07F6E; --green:#86B888;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--cream);color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:620px;margin:0 auto;padding:28px 18px 40px}
+header{text-align:center;margin-bottom:24px}
+h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(34px,9vw,50px);line-height:1.02;margin:0 0 10px;letter-spacing:-0.5px}
+h1 .r{color:var(--red)} h1 .g{color:var(--green)}
+.sub{color:var(--muted);margin:0 auto;max-width:40ch;font-size:15px}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
+
+/* Flag-shaped card */
+.flagwrap{max-width:460px;margin:0 auto 18px;display:flex;align-items:stretch}
+.pole{width:10px;border-radius:6px;background:var(--gold);flex:none;margin-right:-2px;position:relative;z-index:2}
+.pole::before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:18px;height:18px;border-radius:50%;background:var(--gold)}
+.flag{flex:1;background:var(--card);border:1.5px solid var(--line);border-left:0;border-radius:0 18px 18px 0;
+  padding:26px 24px 22px 26px;min-height:300px;display:flex;flex-direction:column;position:relative;
+  transform-origin:left center;transition:background .3s,border-color .3s}
+.flag.wave{animation:wave .6s ease}
+@keyframes wave{0%{transform:perspective(800px) rotateY(-14deg)}60%{transform:perspective(800px) rotateY(4deg)}100%{transform:none}}
+.flag.red{border-color:var(--red);background:color-mix(in srgb,var(--red) 9%,var(--card))}
+.flag.green{border-color:var(--green);background:color-mix(in srgb,var(--green) 10%,var(--card))}
+.label{font-size:14px;font-weight:600;color:var(--muted)}
+.trait{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(24px,6.4vw,32px);line-height:1.2;margin:18px 0 auto}
+.twist{display:none;margin-top:18px;padding-top:16px;border-top:1.5px dashed var(--line)}
+.twist.show{display:block;animation:in .35s ease}
+.twist .label{color:var(--gold)}
+.twist p{font-family:Fraunces,Georgia,serif;font-size:21px;line-height:1.3;margin:6px 0 0;font-weight:600}
+.empty{color:var(--muted);text-align:center;margin:auto 0}
+.empty .trait{margin:0 0 8px}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Voting */
+.votes{max-width:460px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.v{border-radius:14px;padding:14px 16px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);
+  font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.v b{font-family:Fraunces,Georgia,serif;font-size:26px;font-weight:600}
+.v.red b{color:var(--red)} .v.green b{color:var(--green)}
+.v:disabled{opacity:.45;cursor:default}
+.split{max-width:460px;margin:12px auto 0;height:8px;border-radius:99px;background:var(--line);display:flex;overflow:hidden}
+.split .gs{background:var(--green);transition:width .3s} .split .rs{background:var(--red);transition:width .3s}
+.result{text-align:center;color:var(--muted);font-size:15px;min-height:24px;margin:10px auto 0;max-width:42ch}
+.result strong{color:var(--ink)}
+
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.btn{border-radius:999px;padding:14px 28px;font-weight:600;font-size:16px;border:0;background:var(--sage);color:#fff}
+.btn:hover{background:var(--sage-deep)}
+.btn.ghost{background:transparent;color:var(--sage-deep);border:1.5px solid var(--sage);padding:12px 22px;font-size:15px}
+.btn:disabled{opacity:.4;cursor:default}
+.hidden{display:none!important}
+
+details{max-width:460px;margin:28px auto 0;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:15px}
+summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details ol{padding-left:20px;margin:10px 0 0} details li{margin-bottom:6px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1><span class="r">Red flag</span>, <span class="g">green flag</span></h1>
+    <p class="sub">Vote on a dating habit. Then the twist drops, and you vote again. Watch who switches.</p>
+  </header>
+
+  <div class="flagwrap">
+    <div class="pole" aria-hidden="true"></div>
+    <div class="flag" id="flag" aria-live="polite">
+      <div class="empty">
+        <div class="trait">Ready?</div>
+        <div>Draw a card to raise the first flag.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="voting" class="hidden">
+    <div class="votes">
+      <button class="v green" id="gBtn">Green flag <b id="gN">0</b></button>
+      <button class="v red" id="rBtn">Red flag <b id="rN">0</b></button>
+    </div>
+    <div class="split" aria-hidden="true"><span class="gs" id="gs" style="width:50%"></span><span class="rs" id="rs" style="width:50%"></span></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="drawBtn">Draw a card</button>
+    <button class="btn ghost hidden" id="twistBtn">Reveal the twist</button>
+  </div>
+
+  <details>
+    <summary>How to play</summary>
+    <ol>
+      <li>Read the habit out loud. On three, everyone calls red flag or green flag.</li>
+      <li>Tap the buttons to log the table's votes.</li>
+      <li>Reveal the twist and vote again from zero.</li>
+      <li>Anyone who switched sides explains themselves. Anyone who did not switch defends their stubbornness.</li>
+    </ol>
+  </details>
+</main>
+
+<script>
+const CARDS = [
+  ["They still have their ex's photos on their phone.","The photos are from a trip with their whole friend group."],
+  ["They text “good morning” every single day.","They expect you to reply within five minutes."],
+  ["They have never been in a long relationship.","They are 35."],
+  ["They are best friends with their ex.","Their ex is now married with two kids."],
+  ["They call their mum every day.","They put her on speaker during your dates."],
+  ["They want a joint bank account after marriage.","They earn three times what you earn."],
+  ["They plan every date down to the minute.","Including when you are allowed to use your phone."],
+  ["They have never said sorry first in an argument.","But they always fix the problem the next day."],
+  ["They do not post you on social media.","They do not post anything at all."],
+  ["They are always 30 minutes late.","They always bring food when they arrive."],
+  ["They want to live in the same city as their parents.","Same street."],
+  ["They have a separate savings account you do not know about.","It is for your surprise anniversary trip."],
+  ["They do not like your best friend.","Your best friend does not like them either."],
+  ["They still sleep with a childhood teddy bear.","They named it after you."],
+  ["They want to move back home to Nigeria after the wedding.","They have already bought the land."],
+  ["They go through your phone.","They let you go through theirs anytime."],
+  ["They have five group chats with their ex's family.","They have known the family since primary school."],
+  ["They never cook.","They clean up after you every time you do."],
+  ["They want a 600-guest wedding.","Their parents are paying for all of it."],
+  ["They read all your messages over your shoulder.","They are just trying to learn how to text in Yoruba."],
+  ["They spend every weekend with their friends.","They invite you every time."],
+  ["They are still paying off a big loan.","It is for their sibling's school fees."],
+  ["They cry at every movie.","Including the cartoons."],
+  ["They do not want children.","They told you on the first date."],
+  ["They want to split every bill exactly 50/50.","Down to the last naira."],
+  ["They let their mum pick out their clothes.","They always look incredible."],
+  ["They never remember important dates.","They set calendar reminders for everyone else's birthdays."],
+  ["They want separate bedrooms after marriage.","They snore like a generator."],
+  ["They are friends with all their exes.","All of them were at your engagement party."],
+  ["They only eat at the same three restaurants.","They know the chef at every one of them."],
+  ["They are extremely close with their opposite-sex best friend.","That friend was the one who introduced you two."],
+  ["They want to quit their job to start a business.","They have already found an investor."],
+  ["They answer every question with “I do not mind.”","Then they complain about the choice."],
+  ["They pray before every meal, even at restaurants.","They pray for the waiter by name."],
+  ["They still use their ex's Netflix account.","Their ex still pays for it."],
+  ["They have a five-year plan for the relationship.","It was in a slideshow on the third date."],
+  ["They never raise their voice in an argument.","They go completely silent for two days instead."],
+  ["They give money to every relative who asks.","They have never once asked anyone for help."],
+  ["They want to name the first child after their parent.","Both of their parents."],
+  ["They have a skincare routine longer than yours.","They share all their products."]
+];
+
+const $ = id => document.getElementById(id);
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+let pile = shuffle(CARDS), cur = null, round = 1, g = 0, r = 0, first = null;
+
+function paint(){
+  $("gN").textContent = g; $("rN").textContent = r;
+  const t = g + r;
+  $("gs").style.width = t ? `${g/t*100}%` : "50%";
+  $("rs").style.width = t ? `${r/t*100}%` : "50%";
+  const flag = $("flag");
+  flag.classList.remove("red","green");
+  if(t){ if(g > r) flag.classList.add("green"); else if(r > g) flag.classList.add("red"); }
+  let msg = "";
+  if(t >= 2){
+    const lead = g === r ? "Split down the middle." : g > r ? "The table says <strong>green flag</strong>." : "The table says <strong>red flag</strong>.";
+    msg = lead;
+    if(round === 2 && first){
+      const was = first.g === first.r ? "tied" : first.g > first.r ? "green" : "red";
+      const now = g === r ? "tied" : g > r ? "green" : "red";
+      msg += was !== now ? " The twist flipped it. Switchers, explain yourselves." : " The twist changed nothing. Stubborn table.";
+    }
+  }
+  $("result").innerHTML = msg;
+}
+
+function draw(){
+  if(!pile.length) pile = shuffle(CARDS);
+  cur = pile.pop(); round = 1; g = 0; r = 0; first = null;
+  const flag = $("flag");
+  flag.innerHTML = `<div class="label">The habit</div><div class="trait"></div>
+    <div class="twist" id="twist"><div class="label">But wait</div><p></p></div>`;
+  flag.querySelector(".trait").textContent = cur[0];
+  flag.querySelector(".twist p").textContent = cur[1];
+  flag.classList.remove("wave"); void flag.offsetWidth; flag.classList.add("wave");
+  $("voting").classList.remove("hidden");
+  $("twistBtn").classList.remove("hidden");
+  $("twistBtn").disabled = false;
+  $("drawBtn").textContent = "Next card";
+  paint();
+}
+
+function twist(){
+  first = {g, r};
+  round = 2; g = 0; r = 0;
+  $("twist").classList.add("show");
+  $("twistBtn").disabled = true;
+  const flag = $("flag"); flag.classList.remove("wave"); void flag.offsetWidth; flag.classList.add("wave");
+  paint();
+  $("result").textContent = "New information. Vote again from zero.";
+}
+
+$("drawBtn").onclick = draw;
+$("twistBtn").onclick = twist;
+$("gBtn").onclick = ()=>{ g++; paint(); };
+$("rBtn").onclick = ()=>{ r++; paint(); };
+</script>
+</body>
+</html>
