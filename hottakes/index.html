@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hot Takes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sage:#5C7A5E; --sage-deep:#3F5A42; --cream:#F8F5EF; --sky:#AECBDD;
+  --gold:#B8924A; --ink:#1E2620; --muted:#5E6B60; --card:#FFFFFF; --line:#E3DED3;
+  --c-mild:#4F7F9C; --c-medium:#B8924A; --c-spicy:#A3473B;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --cream:#18201A; --card:#222C24; --ink:#EEF0EA; --muted:#A9B5AA; --line:#34403A;
+    --sage:#86A889; --sage-deep:#A7C4A9; --gold:#D4B06A;
+    --c-mild:#86B3CF; --c-medium:#D4B06A; --c-spicy:#E07F6E;
+  }
+}
+:root[data-theme="dark"]{
+  --cream:#18201A; --card:#222C24; --ink:#EEF0EA; --muted:#A9B5AA; --line:#34403A;
+  --sage:#86A889; --sage-deep:#A7C4A9; --gold:#D4B06A;
+  --c-mild:#86B3CF; --c-medium:#D4B06A; --c-spicy:#E07F6E;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--cream);color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:620px;margin:0 auto;padding:28px 18px 40px;display:flex;flex-direction:column;min-height:100vh}
+header{text-align:center;margin-bottom:22px}
+h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(38px,10vw,54px);line-height:1;margin:0 0 8px;letter-spacing:-0.5px;color:var(--sage-deep)}
+.sub{color:var(--muted);margin:0 auto;max-width:40ch;font-size:15px}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 22px}
+.chip{font:inherit;font-size:14px;font-weight:500;cursor:pointer;border-radius:999px;padding:8px 14px;
+  background:transparent;color:var(--ink);border:1.5px solid var(--line);display:flex;align-items:center;gap:6px}
+.chip .heat{letter-spacing:-2px;color:var(--c)}
+.chip[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+button:focus-visible,.deck:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
+
+.stage{display:flex;justify-content:center;perspective:1200px;margin-bottom:18px}
+.deck{all:unset;cursor:pointer;width:100%;max-width:440px;aspect-ratio:5/5.4;position:relative;display:block}
+.deck::before,.deck::after{content:"";position:absolute;inset:0;border-radius:22px;background:var(--card);border:1.5px solid var(--line)}
+.deck::before{transform:rotate(-3deg) translate(-4px,6px)}
+.deck::after{transform:rotate(2deg) translate(4px,4px)}
+.card{position:absolute;inset:0;z-index:1;border-radius:22px;background:var(--card);
+  border:1.5px solid var(--line);box-shadow:0 18px 40px -22px rgba(30,38,32,.35);
+  display:flex;flex-direction:column;padding:28px 26px;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:var(--c,var(--gold))}
+.card.deal{animation:deal .45s cubic-bezier(.2,.8,.3,1)}
+@keyframes deal{from{transform:translateY(24px) rotateX(18deg) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.cat{font-size:14px;font-weight:600;color:var(--c)}
+.prompt{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(25px,6.8vw,34px);line-height:1.18;margin:auto 0;letter-spacing:-0.2px}
+.how{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+.cover{align-items:center;justify-content:center;text-align:center;gap:12px}
+.cover::before{background:var(--gold)}
+.cover .prompt{margin:0;font-size:30px}
+.cover p{margin:0;color:var(--muted);font-size:15px;max-width:28ch}
+
+/* Vote bar */
+.vote{max-width:440px;width:100%;margin:0 auto 18px;display:none}
+.vote.show{display:block}
+.vbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vbtn{font:inherit;cursor:pointer;border-radius:14px;padding:12px;border:1.5px solid var(--line);
+  background:var(--card);color:var(--ink);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.vbtn b{font-family:Fraunces,Georgia,serif;font-size:24px;font-weight:600}
+.vbtn.agree b{color:var(--sage-deep)} .vbtn.disagree b{color:var(--c-spicy)}
+.bar{height:8px;border-radius:99px;background:color-mix(in srgb,var(--c-spicy) 55%,var(--line));overflow:hidden;margin:12px 0 6px}
+.bar span{display:block;height:100%;width:50%;background:var(--sage);transition:width .3s}
+.verdict{font-size:14px;color:var(--muted);text-align:center;min-height:21px}
+
+.controls{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
+.btn{font:inherit;cursor:pointer;border-radius:999px;padding:14px 30px;font-weight:600;font-size:16px;border:0;background:var(--sage);color:#fff}
+.btn:hover{background:var(--sage-deep)}
+.btn.ghost{background:transparent;color:var(--sage-deep);border:1.5px solid var(--sage);padding:12px 22px;font-size:15px}
+.btn.ghost.running{border-color:var(--c-spicy);color:var(--c-spicy)}
+.count{width:100%;text-align:center;font-size:14px;color:var(--muted);margin-top:12px}
+
+details{margin-top:26px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:15px}
+summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details ol{padding-left:20px;margin:10px 0 0}
+details li{margin-bottom:6px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Hot Takes</h1>
+    <p class="sub">Draw a take. Everyone picks a side on three. Whoever is outnumbered has to defend it.</p>
+  </header>
+
+  <div class="filters" id="filters" role="group" aria-label="Heat level"></div>
+
+  <div class="stage">
+    <button class="deck" id="deck" aria-label="Draw a card">
+      <div class="card cover" id="card">
+        <div class="prompt">Tap to draw</div>
+        <p>Read the take out loud. No fence-sitting allowed.</p>
+      </div>
+    </button>
+  </div>
+
+  <div class="vote" id="vote">
+    <div class="vbtns">
+      <button class="vbtn agree" id="agreeBtn">Agree <b id="agreeN">0</b></button>
+      <button class="vbtn disagree" id="disagreeBtn">Disagree <b id="disagreeN">0</b></button>
+    </div>
+    <div class="bar" aria-hidden="true"><span id="barFill"></span></div>
+    <div class="verdict" id="verdict" aria-live="polite"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="drawBtn">Draw a card</button>
+    <button class="btn ghost" id="timerBtn">Defend it: 30s</button>
+    <div class="count" id="count"></div>
+  </div>
+
+  <details>
+    <summary>How to play</summary>
+    <ol>
+      <li>One person draws a card and reads the take out loud.</li>
+      <li>Count down from three. Everyone points thumbs up (agree) or thumbs down (disagree) at the same time.</li>
+      <li>Tap the agree and disagree buttons to log the table's votes.</li>
+      <li>The outnumbered side gets 30 seconds to change minds. Then vote again.</li>
+      <li>Anyone who switches sides has to say why. Pass the phone and draw again.</li>
+    </ol>
+  </details>
+</main>
+
+<script>
+const HEAT = {
+  mild:   { name:"Mild",   fire:"🌶", how:"Low stakes. Still pick a side." },
+  medium: { name:"Medium", fire:"🌶🌶", how:"Relationships and etiquette. Choose wisely." },
+  spicy:  { name:"Spicy",  fire:"🌶🌶🌶", how:"This one starts arguments. Defend your answer." }
+};
+
+const CARDS = [
+  // Mild
+  ["mild","Pineapple belongs on pizza."],
+  ["mild","Ghanaian jollof is better than Nigerian jollof."],
+  ["mild","A hot dog is a sandwich."],
+  ["mild","Cereal is a soup."],
+  ["mild","Reclining your seat on a plane is completely fine."],
+  ["mild","Voice notes longer than one minute should be banned."],
+  ["mild","Replying “k” to a text is rude."],
+  ["mild","Showering at night is better than showering in the morning."],
+  ["mild","Shoes should come off in every house, no exceptions."],
+  ["mild","Leaving a group chat without saying anything is acceptable."],
+  ["mild","Breakfast food is better than dinner food."],
+  ["mild","Arriving on time to a Nigerian party is a waste of time."],
+  ["mild","Every party should have an end time printed on the invite."],
+  ["mild","Gender reveal parties should be retired."],
+  ["mild","Reading someone's message and not replying is worse than not reading it at all."],
+  // Medium
+  ["medium","The person who asked for the date should pay for it."],
+  ["medium","Splitting the bill on a first date is a red flag."],
+  ["medium","Couples should know each other's phone passwords."],
+  ["medium","Couples should keep separate bank accounts."],
+  ["medium","You should live together before getting married."],
+  ["medium","Having a close friend of the opposite sex is fine when you are married."],
+  ["medium","Saying “I love you” within the first month is too soon."],
+  ["medium","You should never lend money to friends."],
+  ["medium","Child-free weddings are perfectly reasonable."],
+  ["medium","Cash is a better wedding gift than anything on the registry."],
+  ["medium","Your wedding gift should cover the cost of your plate."],
+  ["medium","Staying friends with an ex is fine."],
+  ["medium","Posting your relationship online is asking for trouble."],
+  ["medium","It is fine to take a vacation without your partner."],
+  ["medium","Your partner's friends should become your friends."],
+  ["medium","A wedding with more than 300 guests is a waste of money."],
+  ["medium","You should never go to bed angry."],
+  ["medium","Couples should combine their finances completely after marriage."],
+  // Spicy
+  ["spicy","Your spouse should come before your parents."],
+  ["spicy","Prenups are smart, not unromantic."],
+  ["spicy","It is better to marry someone who loves you more than you love them."],
+  ["spicy","In-laws should never live with a married couple."],
+  ["spicy","You should know exactly how much your partner earns before marriage."],
+  ["spicy","If you see your best friend's partner cheating, you must tell them."],
+  ["spicy","Love alone is not enough to make a marriage work."],
+  ["spicy","Bride price is outdated."],
+  ["spicy","The man should be the main provider in a marriage."],
+  ["spicy","A wife should take her husband's last name."],
+  ["spicy","Money sent to family back home should be agreed on as a couple."],
+  ["spicy","Going through your partner's phone is fine if you have a good reason."],
+  ["spicy","There is an ideal age to get married, and it is before 30."],
+  ["spicy","Couples should decide on having children before they get engaged."],
+  ["spicy","Your parents should have a say in who you marry."],
+  ["spicy","Some arguments should be kept from your friends forever."],
+  ["spicy","It is acceptable to say no to being a bridesmaid or groomsman."]
+];
+
+const $ = id => document.getElementById(id);
+const active = new Set(Object.keys(HEAT));
+let pile = [], drawn = 0, agree = 0, disagree = 0, timer = null;
+
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const pool = () => CARDS.filter(c=>active.has(c[0]));
+function rebuild(){ pile = shuffle(pool()); drawn = 0; updateCount(); }
+function updateCount(){
+  const total = pool().length;
+  $("count").textContent = drawn ? `${pile.length} of ${total} takes left` : `${total} takes in the deck`;
+}
+
+function renderFilters(){
+  Object.entries(HEAT).forEach(([k,v])=>{
+    const b=document.createElement("button");
+    b.className="chip"; b.style.setProperty("--c",`var(--c-${k})`);
+    b.setAttribute("aria-pressed","true");
+    b.innerHTML=`<span class="heat" aria-hidden="true">${v.fire}</span>${v.name}`;
+    b.onclick=()=>{
+      if(active.has(k) && active.size===1) return;
+      active.has(k)?active.delete(k):active.add(k);
+      b.setAttribute("aria-pressed", active.has(k));
+      rebuild();
+    };
+    $("filters").appendChild(b);
+  });
+}
+
+function paintVotes(){
+  $("agreeN").textContent = agree; $("disagreeN").textContent = disagree;
+  const total = agree + disagree;
+  $("barFill").style.width = total ? `${agree/total*100}%` : "50%";
+  let v = "";
+  if(total >= 2){
+    if(agree === disagree) v = "Dead even. Everyone gets 30 seconds.";
+    else v = `${agree < disagree ? "Agree" : "Disagree"} side, you are outnumbered. Defend yourselves.`;
+  }
+  $("verdict").textContent = v;
+}
+
+function stopTimer(){
+  clearInterval(timer); timer = null;
+  $("timerBtn").classList.remove("running");
+  $("timerBtn").textContent = "Defend it: 30s";
+}
+function startTimer(){
+  if(timer){ stopTimer(); return; }
+  let s = 30;
+  $("timerBtn").classList.add("running");
+  $("timerBtn").textContent = `${s}s left`;
+  timer = setInterval(()=>{
+    s--;
+    if(s <= 0){ stopTimer(); $("timerBtn").textContent = "Time. Vote again."; return; }
+    $("timerBtn").textContent = `${s}s left`;
+  },1000);
+}
+
+function draw(){
+  if(!pile.length) rebuild();
+  const [k,text] = pile.pop(); drawn++;
+  const h = HEAT[k], card = $("card");
+  card.className = "card";
+  card.style.setProperty("--c",`var(--c-${k})`);
+  card.innerHTML = `<div class="cat"><span aria-hidden="true">${h.fire}</span> ${h.name}</div><div class="prompt"></div><div class="how">${h.how}</div>`;
+  card.querySelector(".prompt").textContent = text;
+  void card.offsetWidth; card.classList.add("deal");
+  $("deck").setAttribute("aria-label", `${h.name}: ${text}. Tap to draw another card.`);
+  agree = 0; disagree = 0; paintVotes(); stopTimer();
+  $("vote").classList.add("show");
+  updateCount();
+}
+
+$("deck").onclick = draw;
+$("drawBtn").onclick = draw;
+$("timerBtn").onclick = startTimer;
+$("agreeBtn").onclick = ()=>{ agree++; paintVotes(); };
+$("disagreeBtn").onclick = ()=>{ disagree++; paintVotes(); };
+renderFilters(); rebuild();
+</script>
+</body>
+</html>

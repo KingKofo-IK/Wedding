@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How Autistic Are You?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sage:#5C7A5E; --sage-deep:#3F5A42; --cream:#F8F5EF; --sky:#AECBDD; --sky-deep:#4F7F9C;
+  --gold:#B8924A; --ink:#1E2620; --muted:#5E6B60; --card:#FFFFFF; --line:#E3DED3;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --cream:#18201A; --card:#222C24; --ink:#EEF0EA; --muted:#A9B5AA; --line:#34403A;
+    --sage:#86A889; --sage-deep:#A7C4A9; --gold:#D4B06A; --sky:#7FA6BF; --sky-deep:#9CC3DB;
+  }
+}
+:root[data-theme="dark"]{
+  --cream:#18201A; --card:#222C24; --ink:#EEF0EA; --muted:#A9B5AA; --line:#34403A;
+  --sage:#86A889; --sage-deep:#A7C4A9; --gold:#D4B06A; --sky:#7FA6BF; --sky-deep:#9CC3DB;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--cream);color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.55}
+.wrap{max-width:580px;margin:0 auto;padding:28px 18px 44px}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
+.hidden{display:none!important}
+
+/* Gauge: the signature element */
+.gauge{width:220px;margin:0 auto 6px;display:block}
+.gauge .track{stroke:var(--line)}
+.gauge .fill{stroke:var(--sage);transition:stroke-dashoffset .9s cubic-bezier(.3,.8,.3,1)}
+.gauge .needle{transform-origin:110px 110px;transition:transform .9s cubic-bezier(.3,.8,.3,1)}
+.gauge .needle line{stroke:var(--ink)}
+.gauge .hub{fill:var(--gold)}
+.gauge text{fill:var(--muted);font-size:11px;font-family:Inter,sans-serif}
+
+.intro{text-align:center;padding-top:3vh}
+h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(34px,9vw,48px);line-height:1.05;margin:10px 0 12px;letter-spacing:-0.5px;color:var(--sage-deep)}
+.intro p{color:var(--muted);max-width:36ch;margin:0 auto 28px}
+.fine{font-size:13px;color:var(--muted);margin-top:22px}
+
+.btn{border-radius:999px;padding:15px 32px;font-weight:600;font-size:16px;border:0;background:var(--sage);color:#fff}
+.btn:hover{background:var(--sage-deep)}
+.btn.ghost{background:transparent;color:var(--sage-deep);border:1.5px solid var(--sage)}
+
+.top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px;margin-bottom:8px}
+.prog{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:26px}
+.prog span{display:block;height:100%;background:var(--gold);transition:width .3s}
+.q{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(23px,6vw,29px);line-height:1.22;margin:0 0 22px}
+.opts{display:grid;gap:10px}
+.opt{text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:15px 18px;font-size:16px}
+.opt:hover{border-color:var(--sage)}
+.opt.picked{border-color:var(--sage);background:color-mix(in srgb,var(--sage) 12%,var(--card))}
+.back{background:none;border:0;color:var(--muted);font-size:14px;padding:4px 0}
+.back:disabled{visibility:hidden}
+
+.result{text-align:center;padding-top:2vh}
+.pct{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:72px;line-height:1;color:var(--sage-deep);margin-top:-6px}
+.pct small{font-size:30px;font-weight:400;color:var(--muted)}
+.rtitle{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:27px;margin:14px 0 8px}
+.rblurb{color:var(--muted);max-width:38ch;margin:0 auto 22px}
+.traits{text-align:left;max-width:420px;margin:0 auto 26px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px 20px}
+.traits h3{font-family:Fraunces,Georgia,serif;font-size:18px;margin:0 0 8px;font-weight:600}
+.traits ul{margin:0;padding-left:18px;color:var(--ink);font-size:15px}
+.traits li{margin-bottom:4px}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.toast{margin-top:12px;font-size:14px;color:var(--sage-deep);min-height:20px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <svg class="gauge" id="gauge" viewBox="0 0 220 130" aria-hidden="true">
+    <path class="track" d="M20 110 A90 90 0 0 1 200 110" fill="none" stroke-width="14" stroke-linecap="round"/>
+    <path class="fill" id="gFill" d="M20 110 A90 90 0 0 1 200 110" fill="none" stroke-width="14" stroke-linecap="round"
+      stroke-dasharray="282.7" stroke-dashoffset="282.7"/>
+    <g class="needle" id="needle" style="transform:rotate(-90deg)">
+      <line x1="110" y1="110" x2="110" y2="34" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <circle class="hub" cx="110" cy="110" r="8"/>
+    <text x="14" y="128">Chill</text>
+    <text x="172" y="128">Max</text>
+  </svg>
+
+  <section id="start" class="intro">
+    <h1>How autistic are you?</h1>
+    <p>Fifteen questions about phone calls, clothing tags, and your exact snack order. Answer honestly. Your friends are watching.</p>
+    <button class="btn" id="startBtn">Start the quiz</button>
+    <div class="fine">Just for fun. This is a party game, not a diagnosis.</div>
+  </section>
+
+  <section id="game" class="hidden">
+    <div class="top"><button class="back" id="backBtn">Back</button><span id="count"></span></div>
+    <div class="prog"><span id="progFill" style="width:0"></span></div>
+    <h2 class="q" id="question"></h2>
+    <div class="opts" id="opts"></div>
+  </section>
+
+  <section id="end" class="result hidden">
+    <div class="pct" id="pct"></div>
+    <div class="rtitle" id="rtitle"></div>
+    <p class="rblurb" id="rblurb"></p>
+    <div class="traits" id="traits"><h3>Your biggest tells</h3><ul id="tellList"></ul></div>
+    <div class="actions">
+      <button class="btn" id="shareBtn">Share my result</button>
+      <button class="btn ghost" id="againBtn">Take it again</button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </section>
+
+</main>
+
+<script>
+// Each answer scores 0 to 3. "tell" is the line shown on the results card when the player scores 2 or more.
+const QS = [
+  { q:"Your phone rings and it is an unknown number. You:", tell:"Treats phone calls like a jump scare",
+    a:["Answer it. Could be important.","Let it ring, then Google the number","Stare at it until it stops","Put the phone face down and leave the room"] },
+  { q:"Someone moves your stuff while you are out. You:", tell:"Notices when anything moves one inch",
+    a:["Do not notice","Notice, but it is fine","Put everything back exactly where it was","Feel it in your soul before you even walk in"] },
+  { q:"How do you feel about clothing tags?", tell:"Has declared war on clothing tags",
+    a:["What tags?","Slightly annoying","Cut them out of everything","Only buy tagless, thank you"] },
+  { q:"Plans get cancelled last minute. Your reaction:", tell:"Needs a 24-hour notice for plan changes",
+    a:["Cool, more free time","A little disappointed","Annoyed, I had a whole schedule","Need to lie down and reset the entire day"] },
+  { q:"Someone asks about your favorite topic. How long do you talk?", tell:"Gives TED Talks when asked a simple question",
+    a:["A sentence or two","A few minutes","Long enough to see their eyes glaze","I have slides"] },
+  { q:"How many times have you rewatched your comfort show?", tell:"Has the comfort show memorized word for word",
+    a:["Once was enough","Two or three times","More than ten","I can recite it with the actors"] },
+  { q:"Before an important phone call, you:", tell:"Rehearses conversations in the shower",
+    a:["Just call","Think about it for a second","Write down what to say","Rehearse both sides of the call out loud"] },
+  { q:"At a loud party, you are most likely:", tell:"Becomes best friends with the host's dog",
+    a:["In the middle of the dance floor","Chatting in a small group","Near the exit, recharging","In a quiet room with the host's dog"] },
+  { q:"Someone says “I will be there in five minutes.” You expect them in:", tell:"Takes “five minutes” literally",
+    a:["Twenty minutes, honestly","Ten or so","Five minutes","Five minutes. I started a timer."] },
+  { q:"Your order at your favorite restaurant is:", tell:"Has ordered the same meal since 2019",
+    a:["Something new every time","Usually the same thing","The same thing, every time","The same thing, with the same modifications, in the same order"] },
+  { q:"How many tabs are open on your phone right now?", tell:"Has 47 tabs open, all very important",
+    a:["Zero or one","A few","More than twenty","The counter just says “:)”"] },
+  { q:"When you are thinking, your hands are:", tell:"Owns a drawer of fidget toys",
+    a:["Still","Tapping a little","Clicking a pen nonstop","Running a full fidget routine"] },
+  { q:"Someone says “We should hang out sometime.” You:", tell:"Asks for a date and time on “let us hang out sometime”",
+    a:["Say yes and forget","Say yes and mean it","Ask when exactly","Send a calendar invite before they leave"] },
+  { q:"The lights in a store are too bright. You:", tell:"Rates every room by its lighting",
+    a:["Did not notice","Squint a little","Leave faster than planned","Wear sunglasses indoors with zero shame"] },
+  { q:"Your friend's text ends with a period. You think:", tell:"Reads every text three times for hidden meaning",
+    a:["Nothing","Hmm","Are they mad at me?","Draft a reply, delete it, and analyze it with a friend"] }
+];
+
+const RESULTS = [
+  { min:85, t:"Certified pattern recognition legend", b:"You have a routine, a special interest, and a strong opinion about fluorescent lighting. The rest of us are just living in your world." },
+  { min:65, t:"Fully sensory-aware", b:"Tags out, headphones on, same order every time. You know exactly what you like and you are not apologizing for it." },
+  { min:45, t:"Neurospicy", b:"You are somewhere in the middle. You can do the party, but you have already mapped where the quiet room is." },
+  { min:25, t:"Lightly seasoned", b:"A few quirks here and there. You probably rewatch one show more than you would like to admit." },
+  { min:0,  t:"Chaos goblin", b:"Plans change? Fine. Loud room? Fine. Unknown caller? You picked up. Who are you?" }
+];
+
+const $ = id => document.getElementById(id);
+let i = 0, ans = [];
+
+function setGauge(p){
+  $("gFill").style.strokeDashoffset = 282.7 * (1 - p/100);
+  $("needle").style.transform = `rotate(${-90 + 180*p/100}deg)`;
+}
+function livePct(){ const s = ans.reduce((t,v)=>t+(v||0),0); return ans.length ? s / (ans.length*3) * 100 : 0; }
+
+function start(){
+  i = 0; ans = [];
+  $("start").classList.add("hidden"); $("end").classList.add("hidden"); $("game").classList.remove("hidden");
+  setGauge(0); show();
+}
+function show(){
+  const item = QS[i];
+  $("count").textContent = `${i+1} of ${QS.length}`;
+  $("progFill").style.width = `${i/QS.length*100}%`;
+  $("question").textContent = item.q;
+  $("backBtn").disabled = i === 0;
+  $("opts").innerHTML = "";
+  item.a.forEach((txt,score)=>{
+    const b = document.createElement("button");
+    b.className = "opt" + (ans[i]===score ? " picked" : "");
+    b.textContent = txt;
+    b.onclick = ()=>{
+      ans[i] = score; b.classList.add("picked");
+      setGauge(livePct());
+      setTimeout(()=>{ i++; i < QS.length ? show() : finish(); }, 220);
+    };
+    $("opts").appendChild(b);
+  });
+}
+function back(){ if(i>0){ i--; ans.length = i; setGauge(livePct()); show(); } }
+
+function finish(){
+  $("game").classList.add("hidden"); $("end").classList.remove("hidden");
+  const p = Math.round(livePct());
+  setGauge(p);
+  $("pct").innerHTML = `${p}<small>%</small>`;
+  const r = RESULTS.find(x=>p>=x.min);
+  $("rtitle").textContent = r.t; $("rblurb").textContent = r.b;
+  const tells = QS.map((q,k)=>({t:q.tell,s:ans[k]})).filter(x=>x.s>=2).sort((a,b)=>b.s-a.s).slice(0,4);
+  $("traits").classList.toggle("hidden", !tells.length);
+  $("tellList").innerHTML = "";
+  tells.forEach(x=>{ const li=document.createElement("li"); li.textContent=x.t; $("tellList").appendChild(li); });
+  $("toast").textContent = "";
+  window._share = `I got ${p}%: "${r.t}" on the How Autistic Are You quiz. Beat that.`;
+}
+
+async function share(){
+  const text = window._share;
+  try{
+    if(navigator.share){ await navigator.share({text, url:location.href}); return; }
+    await navigator.clipboard.writeText(text + " " + location.href);
+    $("toast").textContent = "Copied to your clipboard.";
+  }catch(e){ $("toast").textContent = text; }
+}
+
+$("startBtn").onclick = start;
+$("againBtn").onclick = start;
+$("backBtn").onclick = back;
+$("shareBtn").onclick = share;
+</script>
+</body>
+</html>
